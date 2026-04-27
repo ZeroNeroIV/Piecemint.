@@ -236,7 +236,7 @@ export default function BudgetCashFlow() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         <MonthlyPlanSection state={state} onChange={persist} />
         <ScheduledBillsSection state={state} onChange={persist} />
       </div>
