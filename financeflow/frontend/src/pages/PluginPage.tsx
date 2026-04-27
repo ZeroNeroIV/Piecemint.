@@ -19,6 +19,7 @@ import SmartCategorizeToolbar from '../components/SmartCategorizeToolbar';
 import StockholdersPanel from '../components/StockholdersPanel';
 import EmailNotificationsPanel from '../components/EmailNotificationsPanel';
 import WebNotificationsPanel from '../components/WebNotificationsPanel';
+import SmallBusinessPanel from '../components/SmallBusinessPanel';
 
 export default function PluginPage() {
   const { pluginId = '' } = useParams();
@@ -96,7 +97,7 @@ export default function PluginPage() {
         'space-y-8',
         pluginId === 'invoice_gen'
           ? 'max-w-4xl'
-          : pluginId === 'stockholders'
+          : pluginId === 'stockholders' || pluginId === 'small_business'
             ? 'max-w-5xl'
             : pluginId === 'email_notifications' || pluginId === 'web_notifications'
               ? 'max-w-4xl'
@@ -133,6 +134,8 @@ export default function PluginPage() {
       {pluginId === 'email_notifications' && <EmailNotificationsPanel />}
 
       {pluginId === 'web_notifications' && <WebNotificationsPanel />}
+
+      {pluginId === 'small_business' && <SmallBusinessPanel />}
 
       {pluginId === 'invoice_gen' && (
         <div className="space-y-8">
@@ -244,7 +247,7 @@ export default function PluginPage() {
         </section>
       )}
 
-      {!['tax_calculator', 'invoice_gen', 'expense_categorizer', 'ai_prediction', 'stockholders', 'email_notifications', 'web_notifications'].includes(
+      {!['tax_calculator', 'invoice_gen', 'expense_categorizer', 'ai_prediction', 'stockholders', 'email_notifications', 'web_notifications', 'small_business'].includes(
         pluginId
       ) && (
         <section className="card p-6 text-ink-black/80 text-sm">
