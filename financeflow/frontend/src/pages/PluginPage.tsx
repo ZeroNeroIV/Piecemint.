@@ -16,6 +16,7 @@ import InvoiceExportSettings from '../components/InvoiceExportSettings';
 import InvoiceHistorySection from '../components/InvoiceHistorySection';
 import TaxCalculatorResidencyPanel from '../components/TaxCalculatorResidencyPanel';
 import SmartCategorizeToolbar from '../components/SmartCategorizeToolbar';
+import StockholdersPanel from '../components/StockholdersPanel';
 
 export default function PluginPage() {
   const { pluginId = '' } = useParams();
@@ -91,7 +92,7 @@ export default function PluginPage() {
     <div
       className={[
         'space-y-8',
-        pluginId === 'invoice_gen' ? 'max-w-4xl' : 'max-w-3xl',
+        pluginId === 'invoice_gen' ? 'max-w-4xl' : pluginId === 'stockholders' ? 'max-w-5xl' : 'max-w-3xl',
       ].join(' ')}
     >
       <header>
@@ -118,6 +119,8 @@ export default function PluginPage() {
           )}
         </div>
       )}
+
+      {pluginId === 'stockholders' && <StockholdersPanel />}
 
       {pluginId === 'invoice_gen' && (
         <div className="space-y-8">
@@ -154,7 +157,13 @@ export default function PluginPage() {
             <input
               type="search"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setSearchQuery(v);
+                if (!v.trim()) {
+                  setSearchResults([]);
+                }
+              }}
               placeholder='e.g. "cloud" for hosting spend'
               className="flex-1 bg-transparent border-b-2 border-ink-black/20 pb-2 outline-none text-lg focus:border-ink-black"
             />
@@ -162,8 +171,8 @@ export default function PluginPage() {
               Search
             </button>
           </form>
-          {searchResults.length > 0 && (
-            <ul className="space-y-2">
+          {searchQuery.trim().length > 0 && searchResults.length > 0 && (
+            <ul className="space-y-2" aria-label="Search results">
               {searchResults.map((r) => (
                 <li
                   key={r.id}
@@ -223,7 +232,7 @@ export default function PluginPage() {
         </section>
       )}
 
-      {!['tax_calculator', 'invoice_gen', 'expense_categorizer', 'ai_prediction'].includes(
+      {!['tax_calculator', 'invoice_gen', 'expense_categorizer', 'ai_prediction', 'stockholders'].includes(
         pluginId
       ) && (
         <section className="card p-6 text-ink-black/80 text-sm">

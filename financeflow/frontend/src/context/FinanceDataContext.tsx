@@ -33,8 +33,7 @@ import {
   type CategoryAssignments,
   type CategoryRegistryExtra,
 } from '../lib/categoryStorage';
-
-const API_URL = 'http://localhost:8000/api';
+import { API_BASE as API_URL } from '../lib/apiBase';
 
 type FinanceDataContextValue = {
   tenantId: string;

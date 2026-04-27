@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.core_routes import router as core_router
 from api.database import SessionLocal, init_db
+from api.dev_routes import router as dev_router
 from api.seed import ensure_seed_data
 from plugin_manager import PluginManager
 
@@ -35,6 +36,7 @@ plugin_manager.discover_plugins()
 plugin_manager.register_routes(app)
 
 app.include_router(core_router)
+app.include_router(dev_router)
 
 
 @app.get("/")

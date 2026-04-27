@@ -1,7 +1,9 @@
-import { Puzzle, CheckCircle2, Download, Search } from 'lucide-react';
+import { Puzzle, CheckCircle2, Download, Search, BookOpen, FileCode2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useFinanceData } from '../context/FinanceDataContext';
 import { PluginEnableSwitch } from '../components/PluginEnableSwitch';
+import AddPluginModal from '../components/AddPluginModal';
 import type { InstalledPlugin } from '../types/plugins';
 
 type StatusFilter = 'all' | 'installed' | 'not_installed';
@@ -37,6 +39,7 @@ export default function Marketplace() {
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<StatusFilter>('all');
+  const [addPluginOpen, setAddPluginOpen] = useState(false);
 
   const allPlugins = useMemo(
     () => mergePlugins(installed, available),
@@ -63,6 +66,23 @@ export default function Marketplace() {
           <code className="text-sm bg-ink-black/5 px-2 py-0.5 rounded-lg">plugins/</code> on the
           server, then refresh this list.
         </p>
+        <div className="mt-6 flex flex-col sm:flex-row flex-wrap gap-3">
+          <Link
+            to="/docs/plugins"
+            className="pill-button-secondary inline-flex items-center justify-center gap-2 no-underline w-full sm:w-auto"
+          >
+            <BookOpen size={18} aria-hidden />
+            How to build a plugin
+          </Link>
+          <button
+            type="button"
+            onClick={() => setAddPluginOpen(true)}
+            className="pill-button inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+          >
+            <FileCode2 size={18} aria-hidden />
+            Add your plugin
+          </button>
+        </div>
         <button
           type="button"
           onClick={() => void refresh()}
@@ -71,6 +91,13 @@ export default function Marketplace() {
           Refresh plugin list
         </button>
       </section>
+
+      {addPluginOpen && (
+        <AddPluginModal
+          onClose={() => setAddPluginOpen(false)}
+          onInstalled={() => void refresh()}
+        />
+      )}
 
       {allPlugins.length > 0 && (
         <section>

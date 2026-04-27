@@ -8,6 +8,7 @@ import Contacts from './pages/Contacts';
 import Activity from './pages/Activity';
 import BudgetCashFlow from './pages/BudgetCashFlow';
 import Marketplace from './pages/Marketplace';
+import PluginDocsPage from './pages/PluginDocsPage';
 import PluginPage from './pages/PluginPage';
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
             <Route path="/activity" element={<Activity />} />
             <Route path="/budget" element={<BudgetCashFlow />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/docs/plugins" element={<PluginDocsPage />} />
             <Route path="/plugin/:pluginId" element={<PluginPage />} />
           </Route>
         </Routes>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import GlobalSearchModal, { isSearchShortcut } from './GlobalSearchModal';
 import {
   LayoutDashboard,
   LineChart,
@@ -97,6 +98,19 @@ function mobileTabClass({ isActive }: { isActive: boolean }) {
 
 export default function AppLayout() {
   const { setTenantId, tenantId, plugins, isPluginEnabled } = useFinanceData();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (isSearchShortcut(e)) {
+        e.preventDefault();
+        setSearchOpen((o) => !o);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof localStorage === 'undefined') return false;
     try {
@@ -174,10 +188,15 @@ export default function AppLayout() {
             </select>
             <button
               type="button"
-              className="w-11 h-11 md:w-12 md:h-12 rounded-full border border-ink-black/20 flex items-center justify-center shrink-0"
-              aria-label="Search"
+              onClick={() => setSearchOpen(true)}
+              className="w-11 h-11 md:w-12 md:h-12 rounded-full border border-ink-black/20 flex items-center justify-center shrink-0 text-ink-black hover:bg-ink-black/[0.05] transition-colors"
+              aria-label="Open search"
+              aria-keyshortcuts="Control+K Meta+K"
+              aria-expanded={searchOpen}
+              aria-controls="ff-global-search"
+              title="Search — Ctrl+K or ⌘K"
             >
-              <Search size={20} />
+              <Search size={20} aria-hidden />
             </button>
           </div>
         </div>
@@ -200,14 +219,14 @@ export default function AppLayout() {
         ))}
       </nav>
 
-      <div className="flex flex-1 max-w-[1600px] w-full mx-auto min-w-0">
+      <div className="flex flex-1 w-full min-w-0 md:items-start">
         <aside
           className={[
             'hidden md:flex shrink-0 flex-col border-r border-ink-black/10 bg-lifted-cream/50 gap-1',
             'transition-[width,padding] duration-300 ease-out',
             sidebarSticky,
-            'md:self-start md:overflow-y-auto md:overflow-x-hidden',
-            'md:max-h-[calc(100vh-4.5rem)]',
+            'md:shrink-0 md:overflow-y-auto md:overflow-x-hidden',
+            'md:h-[calc(100vh-4.5rem)]',
             c ? 'md:w-[4.5rem] md:px-2 md:py-3' : 'md:w-64 md:p-4',
           ].join(' ')}
           aria-label="Sidebar"
@@ -276,9 +295,15 @@ export default function AppLayout() {
           </SidebarItemTooltip>
         </aside>
 
-        <main className="flex-1 min-w-0 px-4 py-8 md:px-10 md:py-10">
-          <Outlet />
+        <main className="flex-1 min-w-0 w-full">
+          <div className="max-w-[1600px] w-full mx-auto px-4 py-8 md:px-10 md:py-10">
+            <Outlet />
+          </div>
         </main>
+      </div>
+
+      <div id="ff-global-search" className="contents" aria-hidden={!searchOpen}>
+        <GlobalSearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
       </div>
     </div>
   );

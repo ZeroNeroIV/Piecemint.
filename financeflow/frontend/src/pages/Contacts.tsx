@@ -1,29 +1,59 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Download, Eye } from 'lucide-react';
 import { useFinanceData } from '../context/FinanceDataContext';
 import InvoiceDownloadModal from '../components/InvoiceDownloadModal';
 import ContactEntityShowModal from '../components/ContactEntityShowModal';
 import EntityCategorySelect from '../components/EntityCategorySelect';
 
+type ContactRow = { id: string; name: string; email: string; total_billed: number };
+
 export default function Contacts() {
-  const { clients, suppliers, stockholders, isPluginActive } = useFinanceData();
+  const { clients, suppliers, isPluginActive } = useFinanceData();
+  const [searchParams, setSearchParams] = useSearchParams();
   const inv = isPluginActive('invoice_gen');
   const [invoiceClient, setInvoiceClient] = useState<{
     id: string;
     name: string;
   } | null>(null);
-  const [showClient, setShowClient] = useState<{
-    id: string;
-    name: string;
-    email: string;
-    total_billed: number;
-  } | null>(null);
-  const [showSupplier, setShowSupplier] = useState<{
-    id: string;
-    name: string;
-    email: string;
-    total_billed: number;
-  } | null>(null);
+  const [showClient, setShowClient] = useState<ContactRow | null>(null);
+  const [showSupplier, setShowSupplier] = useState<ContactRow | null>(null);
+
+  const clearEntityQuery = useCallback(() => {
+    setSearchParams(
+      (prev) => {
+        const n = new URLSearchParams(prev);
+        n.delete('client');
+        n.delete('supplier');
+        return n;
+      },
+      { replace: true }
+    );
+  }, [setSearchParams]);
+
+  useEffect(() => {
+    const clientId = searchParams.get('client');
+    const supplierId = searchParams.get('supplier');
+    if (clientId) {
+      const c = (clients as ContactRow[]).find((x) => x.id === clientId);
+      if (c) {
+        setShowClient(c);
+        setShowSupplier(null);
+        return;
+      }
+      setShowClient(null);
+      return;
+    }
+    if (supplierId) {
+      const s = (suppliers as ContactRow[]).find((x) => x.id === supplierId);
+      if (s) {
+        setShowSupplier(s);
+        setShowClient(null);
+        return;
+      }
+      setShowSupplier(null);
+    }
+  }, [searchParams, clients, suppliers]);
 
   return (
     <div className="space-y-10 max-w-5xl">
@@ -33,7 +63,8 @@ export default function Contacts() {
           Your customers and the businesses you pay, in one place. Set a category on each line by hand, or
           turn on <strong>Smart Categorizer</strong> in the plugin library, then run{' '}
           <strong>Smart categorization</strong> on the Smart Categorizer page to suggest categories for
-          anything still open—suggestions you keep are remembered for next time.
+          anything still open—suggestions you keep are remembered for next time. Stockholders and share %
+          are on the <strong>Stockholders</strong> plugin page when that plugin is enabled.
         </p>
       </header>
 
@@ -55,7 +86,7 @@ export default function Contacts() {
                 </tr>
               </thead>
               <tbody>
-                {clients.map((c: { id: string; name: string; email: string; total_billed: number }) => (
+                {clients.map((c: ContactRow) => (
                   <tr key={c.id} className="border-b border-ink-black/5 last:border-0">
                     <td className="py-4 align-top">
                       <div className="font-medium">{c.name}</div>
@@ -118,7 +149,7 @@ export default function Contacts() {
                 </tr>
               </thead>
               <tbody>
-                {suppliers.map((s: { id: string; name: string; email: string; total_billed: number }) => (
+                {suppliers.map((s: ContactRow) => (
                   <tr key={s.id} className="border-b border-ink-black/5 last:border-0">
                     <td className="py-4 align-top">
                       <div className="font-medium">{s.name}</div>
@@ -154,48 +185,6 @@ export default function Contacts() {
         </section>
       </div>
 
-      <section>
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-2 h-2 rounded-full bg-ink-black" />
-          <h2 className="text-sm font-bold tracking-widest uppercase text-ink-black/60">Stockholders</h2>
-        </div>
-        <div className="card overflow-x-auto">
-          <table className="w-full text-left min-w-[480px]">
-            <thead>
-              <tr className="border-b border-ink-black/10">
-                <th className="pb-4 font-medium">Name</th>
-                <th className="pb-4 font-medium">Category</th>
-                <th className="pb-4 font-medium">Email</th>
-                <th className="pb-4 font-medium">Share %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stockholders.map(
-                (s: { id: string; name: string; email: string; share_percent: number | null }) => (
-                  <tr key={s.id} className="border-b border-ink-black/5 last:border-0">
-                    <td className="py-4 font-medium">{s.name}</td>
-                    <td className="py-4 align-top">
-                      <EntityCategorySelect kind="stockholder" entityId={s.id} />
-                    </td>
-                    <td className="py-4 text-sm text-ink-black/70">{s.email || '—'}</td>
-                    <td className="py-4 tabular-nums">
-                      {s.share_percent != null ? `${Number(s.share_percent).toFixed(1)}%` : '—'}
-                    </td>
-                  </tr>
-                )
-              )}
-              {stockholders.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="py-8 text-center text-ink-black/60">
-                    No stockholders in this tenant.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
       {invoiceClient && (
         <InvoiceDownloadModal
           key={invoiceClient.id}
@@ -208,14 +197,20 @@ export default function Contacts() {
         <ContactEntityShowModal
           kind="client"
           record={showClient}
-          onClose={() => setShowClient(null)}
+          onClose={() => {
+            setShowClient(null);
+            if (searchParams.get('client')) clearEntityQuery();
+          }}
         />
       )}
       {showSupplier && (
         <ContactEntityShowModal
           kind="supplier"
           record={showSupplier}
-          onClose={() => setShowSupplier(null)}
+          onClose={() => {
+            setShowSupplier(null);
+            if (searchParams.get('supplier')) clearEntityQuery();
+          }}
         />
       )}
     </div>
