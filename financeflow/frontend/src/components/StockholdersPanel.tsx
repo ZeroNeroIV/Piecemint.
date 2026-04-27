@@ -37,7 +37,7 @@ export default function StockholdersPanel() {
             {stockholders.length === 0 && (
               <tr>
                 <td colSpan={4} className="py-8 text-center text-ink-black/60">
-                  No stockholders in this tenant.
+                  No stockholders in the database.
                 </td>
               </tr>
             )}

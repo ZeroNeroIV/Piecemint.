@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useId, useState } from 'react';
-import { useFinanceData } from '../context/FinanceDataContext';
 import type { TaxResidencyState } from '../types/invoiceExport';
 import { loadTaxCalculatorResidency, saveTaxCalculatorResidency } from '../lib/taxCalculatorResidencyStorage';
 import TaxResidencySection from './TaxResidencySection';
@@ -7,19 +6,18 @@ import { validateTaxResidencyData } from '../services/taxResidencyRegistry';
 
 /**
  * Tax Residency & Location for the tax calculator module only (separate from invoice export).
- * Data lives in `ff_tax_calc_residency_v1_*` — new countries: edit `meTaxResidency.config.ts` only.
+ * Data lives in `ff_tax_calc_residency_v1` — new countries: edit `meTaxResidency.config.ts` only.
  */
 export default function TaxCalculatorResidencyPanel() {
-  const { tenantId } = useFinanceData();
   const idp = useId();
-  const [value, setValue] = useState<TaxResidencyState>(() => loadTaxCalculatorResidency(tenantId));
+  const [value, setValue] = useState<TaxResidencyState>(() => loadTaxCalculatorResidency());
   const [savedMsg, setSavedMsg] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldId, setFieldId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    setValue(loadTaxCalculatorResidency(tenantId));
-  }, [tenantId]);
+    setValue(loadTaxCalculatorResidency());
+  }, []);
 
   const onSave = useCallback(() => {
     const v = validateTaxResidencyData(value.countryCode, value.additionalData);
@@ -30,10 +28,10 @@ export default function TaxCalculatorResidencyPanel() {
     }
     setFormError(null);
     setFieldId(undefined);
-    saveTaxCalculatorResidency(tenantId, value);
+    saveTaxCalculatorResidency(value);
     setSavedMsg(true);
     window.setTimeout(() => setSavedMsg(false), 2000);
-  }, [tenantId, value]);
+  }, [value]);
 
   return (
     <section className="card p-6 md:p-8">

@@ -62,12 +62,12 @@ def _sh_out(s: db_models.Stockholder) -> Stockholder:
 
 @router.get("/tenants", response_model=List[TenantInfo])
 def list_tenants(db: DbSession) -> List[TenantInfo]:
-    """Public catalog of tenants (for demos / MCP discovery). Not tenant-scoped."""
+    """Catalog of orgs in the DB (single org in default install). Not header-scoped."""
     rows = db.query(db_models.Tenant).order_by(db_models.Tenant.id).all()
     return [TenantInfo(id=t.id, name=t.name) for t in rows]
 
 
-# --- CRM: clients (tenant_id on every row, scoped by header) ---
+# --- CRM: clients (rows carry tenant_id; API injects the single default org) ---
 
 
 @router.get("/clients", response_model=List[Client])

@@ -1,15 +1,16 @@
 import type { TaxResidencyState } from '../types/invoiceExport';
 import { defaultTaxResidencyState } from '../types/invoiceExport';
 import { isMECountryCode } from '../services/taxResidencyRegistry';
+import { getItemMigrated, setItemMigrated } from './localStorageScope';
 
-const key = (tenantId: string) => `ff_tax_calc_residency_v1_${tenantId}`;
+const STORAGE_KEY = 'ff_tax_calc_residency_v1';
 
-export function loadTaxCalculatorResidency(tenantId: string): TaxResidencyState {
+export function loadTaxCalculatorResidency(): TaxResidencyState {
   if (typeof localStorage === 'undefined') {
     return { ...defaultTaxResidencyState };
   }
   try {
-    const raw = localStorage.getItem(key(tenantId));
+    const raw = getItemMigrated(STORAGE_KEY);
     if (!raw) return { ...defaultTaxResidencyState };
     const t = JSON.parse(raw) as Record<string, unknown>;
     const code = t.countryCode;
@@ -35,11 +36,6 @@ export function loadTaxCalculatorResidency(tenantId: string): TaxResidencyState 
   }
 }
 
-export function saveTaxCalculatorResidency(tenantId: string, tr: TaxResidencyState) {
-  if (typeof localStorage === 'undefined') return;
-  try {
-    localStorage.setItem(key(tenantId), JSON.stringify(tr));
-  } catch (e) {
-    console.error('saveTaxCalculatorResidency', e);
-  }
+export function saveTaxCalculatorResidency(tr: TaxResidencyState) {
+  setItemMigrated(STORAGE_KEY, JSON.stringify(tr));
 }

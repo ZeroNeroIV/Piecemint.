@@ -1,21 +1,15 @@
 from typing import Annotated
 
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from api.database import get_db
+from api.tenant_scope import DEFAULT_TENANT_ID
 
 
-def get_tenant_id(
-    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
-) -> str:
-    """Resolves the active tenant from the `X-Tenant-ID` header (HTTP headers are case-insensitive)."""
-    if not x_tenant_id or not str(x_tenant_id).strip():
-        raise HTTPException(
-            status_code=400,
-            detail="Missing X-Tenant-ID header. Send a tenant id (e.g. tenant_a) for multi-tenant scoping.",
-        )
-    return str(x_tenant_id).strip()
+def get_tenant_id() -> str:
+    """FinanceFlow is single-organization; always scope to the default org."""
+    return DEFAULT_TENANT_ID
 
 
 TenantId = Annotated[str, Depends(get_tenant_id)]

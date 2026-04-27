@@ -15,7 +15,6 @@ import {
   sumScheduledDueWithin,
   ymdInMonth,
 } from '../lib/budgetStorage';
-import { useFinanceData } from '../context/FinanceDataContext';
 import { INK, LIGHT_ORANGE, MUTED, ORANGE, TAUPE, chartTooltipProps } from '../lib/financeCharts';
 
 const DONUT_COLORS = [ORANGE, LIGHT_ORANGE, TAUPE, '#8B8B85', '#5C5C58', MUTED, INK];
@@ -36,23 +35,19 @@ function todayYmd(): string {
 }
 
 export default function BudgetCashFlow() {
-  const { tenantId } = useFinanceData();
   const [state, setState] = useState<BudgetState>(() => defaultBudgetState());
 
   useEffect(() => {
-    setState(loadBudget(tenantId));
-  }, [tenantId]);
+    setState(loadBudget());
+  }, []);
 
-  const persist = useCallback(
-    (next: BudgetState | ((p: BudgetState) => BudgetState)) => {
-      setState((prev) => {
-        const n = typeof next === 'function' ? next(prev) : next;
-        saveBudget(tenantId, n);
-        return n;
-      });
-    },
-    [tenantId]
-  );
+  const persist = useCallback((next: BudgetState | ((p: BudgetState) => BudgetState)) => {
+    setState((prev) => {
+      const n = typeof next === 'function' ? next(prev) : next;
+      saveBudget(n);
+      return n;
+    });
+  }, []);
 
   const ym = useMemo(() => currentYm(), []);
 
@@ -115,7 +110,7 @@ export default function BudgetCashFlow() {
         <h1 className="text-3xl md:text-4xl font-medium tracking-tight mb-2">Budgeting & cash flow</h1>
         <p className="text-ink-black/70 max-w-2xl">
           Plan monthly income and expenses, set aside for upcoming bills, and keep a real-time log.
-          Data is stored in this browser for the active tenant.
+          Data is stored in this browser on this device.
         </p>
       </header>
 

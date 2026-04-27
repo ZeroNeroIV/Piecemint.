@@ -1,7 +1,8 @@
 import type { BudgetLedgerEntry, BudgetMonthlyLine, BudgetScheduledBill, BudgetState } from '../types/budget';
 import { defaultBudgetState } from '../types/budget';
+import { getItemMigrated, setItemMigrated } from './localStorageScope';
 
-const prefix = (tenantId: string) => `ff_budget_cashflow_v1_${tenantId}`;
+const STORAGE_KEY = 'ff_budget_cashflow_v1';
 
 function parseLine(raw: unknown): BudgetMonthlyLine | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
@@ -57,10 +58,10 @@ function parseLedger(raw: unknown): BudgetLedgerEntry | null {
   };
 }
 
-export function loadBudget(tenantId: string): BudgetState {
+export function loadBudget(): BudgetState {
   if (typeof localStorage === 'undefined') return defaultBudgetState();
   try {
-    const raw = localStorage.getItem(prefix(tenantId));
+    const raw = getItemMigrated(STORAGE_KEY);
     if (!raw) return defaultBudgetState();
     const j = JSON.parse(raw) as unknown;
     if (!j || typeof j !== 'object' || Array.isArray(j)) return defaultBudgetState();
@@ -83,13 +84,8 @@ export function loadBudget(tenantId: string): BudgetState {
   }
 }
 
-export function saveBudget(tenantId: string, state: BudgetState): void {
-  if (typeof localStorage === 'undefined') return;
-  try {
-    localStorage.setItem(prefix(tenantId), JSON.stringify(state));
-  } catch {
-    /* ignore */
-  }
+export function saveBudget(state: BudgetState): void {
+  setItemMigrated(STORAGE_KEY, JSON.stringify(state));
 }
 
 export function newId(): string {

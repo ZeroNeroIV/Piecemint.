@@ -65,7 +65,7 @@ export default function PluginPage() {
           <p className="text-xs font-bold tracking-widest uppercase text-ink-black/50 mb-2">Plugin</p>
           <h1 className="text-2xl font-medium mb-2">{meta.name}</h1>
           <p className="text-ink-black/70">
-            This plugin is installed but turned off for this tenant. Turn it on to use it in the app
+            This plugin is installed but turned off. Turn it on to use it in the app
             and show it in the sidebar.
           </p>
         </div>
@@ -146,7 +146,7 @@ export default function PluginPage() {
                 <h2 className="text-lg font-medium mb-2">Export invoices</h2>
                 <p className="text-ink-black/70 text-sm mb-4 max-w-2xl">
                   Configure invoice data (number, dates, line items, customer &amp; supplier details,
-                  notes), then file type and branding. Settings are saved per tenant in this browser.
+                  notes), then file type and branding. Settings are saved in this browser.
                   On the clients page, download opens a dialog pre-filled with these options.
                 </p>
                 <Link

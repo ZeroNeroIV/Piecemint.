@@ -12,7 +12,7 @@ type InvoiceDownloadModalProps = {
 };
 
 export default function InvoiceDownloadModal({ onClose, clientId, clientName }: InvoiceDownloadModalProps) {
-  const { invoiceExportConfig, setInvoiceExportConfig, downloadInvoice, clients, tenantId } = useFinanceData();
+  const { invoiceExportConfig, setInvoiceExportConfig, downloadInvoice, clients } = useFinanceData();
   const [draft, setDraft] = useState<InvoiceExportConfig>(() => ({ ...invoiceExportConfig }));
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -30,7 +30,7 @@ export default function InvoiceDownloadModal({ onClose, clientId, clientName }: 
         if (client.email) doc.customer.email = String(client.email);
       }
       if (!doc.invoiceNumber.trim()) {
-        doc.invoiceNumber = peekNextInvoiceNumber(tenantId);
+        doc.invoiceNumber = peekNextInvoiceNumber();
       }
       if (doc.lineItems[0] && doc.lineItems[0].unitPrice === 0 && Number(client.total_billed) > 0) {
         doc.lineItems = base.document.lineItems.map((l, i) =>
@@ -46,12 +46,12 @@ export default function InvoiceDownloadModal({ onClose, clientId, clientName }: 
       }
     } else {
       if (!doc.invoiceNumber.trim()) {
-        doc.invoiceNumber = peekNextInvoiceNumber(tenantId);
+        doc.invoiceNumber = peekNextInvoiceNumber();
       }
     }
     setDraft({ ...base, document: doc });
     setSaveAsDefault(false);
-  }, [invoiceExportConfig, clientId, client, tenantId]);
+  }, [invoiceExportConfig, clientId, client]);
 
   const patchDraft = useCallback((p: Partial<InvoiceExportConfig>) => {
     setDraft((prev) => ({ ...prev, ...p }));

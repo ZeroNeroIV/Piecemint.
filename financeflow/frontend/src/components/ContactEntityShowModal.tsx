@@ -73,7 +73,7 @@ export default function ContactEntityShowModal({ kind, record, onClose }: Contac
           </div>
         </dl>
         <p className="text-xs text-ink-black/45 mt-6">
-          This is the full record returned by the API for this tenant. Add more fields on the server if you need
+          This is the full record returned by the API. Add more fields on the server if you need
           addresses or tax IDs in the directory.
         </p>
         <button type="button" onClick={onClose} className="mt-6 pill-button w-full sm:w-auto">

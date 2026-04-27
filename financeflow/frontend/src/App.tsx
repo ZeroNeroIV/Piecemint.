@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { FinanceDataProvider } from './context/FinanceDataContext';
 import AppLayout from './components/AppLayout';
@@ -12,11 +11,9 @@ import PluginDocsPage from './pages/PluginDocsPage';
 import PluginPage from './pages/PluginPage';
 
 function App() {
-  const [tenantId, setTenantId] = useState('tenant_a');
-
   return (
     <Router>
-      <FinanceDataProvider tenantId={tenantId} setTenantId={setTenantId}>
+      <FinanceDataProvider>
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<Overview />} />

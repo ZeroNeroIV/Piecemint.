@@ -1,7 +1,8 @@
 import { baseCategoriesForKind, ENTITY_KINDS, type EntityKind } from './categoryTaxonomy';
+import { getItemMigrated, setItemMigrated } from './localStorageScope';
 
-const regKey = (tenantId: string) => `ff_category_registry_v1_${tenantId}`;
-const asgKey = (tenantId: string) => `ff_category_assignments_v1_${tenantId}`;
+const REG_KEY = 'ff_category_registry_v1';
+const ASG_KEY = 'ff_category_assignments_v1';
 
 /** User + AI custom labels by kind (merged with base at runtime). */
 export type CategoryRegistryExtra = Record<EntityKind, string[]>;
@@ -27,10 +28,10 @@ function uniqSorted(arr: string[]): string[] {
   );
 }
 
-export function loadRegistryExtra(tenantId: string): CategoryRegistryExtra {
+export function loadRegistryExtra(): CategoryRegistryExtra {
   if (typeof localStorage === 'undefined') return emptyReg();
   try {
-    const raw = localStorage.getItem(regKey(tenantId));
+    const raw = getItemMigrated(REG_KEY);
     if (!raw) return emptyReg();
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return emptyReg();
@@ -48,19 +49,14 @@ export function loadRegistryExtra(tenantId: string): CategoryRegistryExtra {
   }
 }
 
-export function saveRegistryExtra(tenantId: string, reg: CategoryRegistryExtra): void {
-  if (typeof localStorage === 'undefined') return;
-  try {
-    localStorage.setItem(regKey(tenantId), JSON.stringify(reg));
-  } catch (e) {
-    console.error('saveRegistryExtra', e);
-  }
+export function saveRegistryExtra(reg: CategoryRegistryExtra): void {
+  setItemMigrated(REG_KEY, JSON.stringify(reg));
 }
 
-export function loadAssignments(tenantId: string): CategoryAssignments {
+export function loadAssignments(): CategoryAssignments {
   if (typeof localStorage === 'undefined') return emptyAsg();
   try {
-    const raw = localStorage.getItem(asgKey(tenantId));
+    const raw = getItemMigrated(ASG_KEY);
     if (!raw) return emptyAsg();
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return emptyAsg();
@@ -78,13 +74,8 @@ export function loadAssignments(tenantId: string): CategoryAssignments {
   }
 }
 
-export function saveAssignments(tenantId: string, a: CategoryAssignments): void {
-  if (typeof localStorage === 'undefined') return;
-  try {
-    localStorage.setItem(asgKey(tenantId), JSON.stringify(a));
-  } catch (e) {
-    console.error('saveAssignments', e);
-  }
+export function saveAssignments(a: CategoryAssignments): void {
+  setItemMigrated(ASG_KEY, JSON.stringify(a));
 }
 
 export function optionsForKind(
@@ -120,7 +111,6 @@ export function addLabelsToRegistry(
  * Apply AI map: merge new categories, set assignments. Unknown ids are ignored.
  */
 export function applyAiLayer(
-  tenantId: string,
   regExtra: CategoryRegistryExtra,
   assignments: CategoryAssignments,
   layer: {
@@ -158,7 +148,7 @@ export function applyAiLayer(
   apply('transaction', layer.transactions);
   apply('stockholder', layer.stockholders);
 
-  saveRegistryExtra(tenantId, re);
-  saveAssignments(tenantId, asg);
+  saveRegistryExtra(re);
+  saveAssignments(asg);
   return { regExtra: re, assignments: asg };
 }

@@ -1,15 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../lib/apiBase';
-import { useFinanceData } from '../context/FinanceDataContext';
 import { Bell, BellOff, Radio } from 'lucide-react';
 
 const canUseNotifications = () =>
   typeof window !== 'undefined' && 'Notification' in window && 'permission' in Notification;
 
 export default function WebNotificationsPanel() {
-  const { tenantId } = useFinanceData();
-  const headers = useMemo(() => ({ 'x-tenant-id': tenantId }), [tenantId]);
   const [supported, setSupported] = useState(true);
   const [perm, setPerm] = useState<NotificationPermission | 'unsupported'>('default');
   const [backend, setBackend] = useState<{ vapid_public_key: string | null; note?: string } | null>(
@@ -36,7 +33,7 @@ export default function WebNotificationsPanel() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await axios.get(`${API_BASE}/plugins/web_notifications/status`, { headers });
+        const { data } = await axios.get(`${API_BASE}/plugins/web_notifications/status`);
         if (!cancelled) setBackend(data);
       } catch {
         if (!cancelled) setBackend(null);
@@ -45,7 +42,7 @@ export default function WebNotificationsPanel() {
     return () => {
       cancelled = true;
     };
-  }, [headers]);
+  }, []);
 
   const requestPermission = async () => {
     setError(null);
@@ -80,7 +77,7 @@ export default function WebNotificationsPanel() {
     }
     try {
       const n = new Notification('FinanceFlow', {
-        body: `Test for ${tenantId} — you will see alerts like this for account activity when wired up.`,
+        body: 'Test — you will see alerts like this for account activity when wired up.',
         tag: 'ff-test',
       });
       n.onclick = () => {

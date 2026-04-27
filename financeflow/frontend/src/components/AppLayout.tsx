@@ -97,7 +97,7 @@ function mobileTabClass({ isActive }: { isActive: boolean }) {
 }
 
 export default function AppLayout() {
-  const { setTenantId, tenantId, plugins, isPluginEnabled } = useFinanceData();
+  const { plugins, isPluginEnabled } = useFinanceData();
   const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
@@ -174,18 +174,6 @@ export default function AppLayout() {
         <div className="flex h-full min-h-[4.5rem] items-center justify-between gap-4 px-4 py-4 md:px-8 max-w-[1600px] mx-auto w-full">
           <div className="font-bold text-xl tracking-tighter text-ink-black">FinanceFlow</div>
           <div className="flex items-center gap-3 md:gap-4">
-            <label className="sr-only" htmlFor="tenant-select">
-              Active tenant
-            </label>
-            <select
-              id="tenant-select"
-              value={tenantId}
-              onChange={(e) => setTenantId(e.target.value)}
-              className="bg-transparent border-b border-ink-black/20 pb-1 outline-none text-sm font-medium max-w-[200px]"
-            >
-              <option value="tenant_a">Tenant A (Acme)</option>
-              <option value="tenant_b">Tenant B (Stark)</option>
-            </select>
             <button
               type="button"
               onClick={() => setSearchOpen(true)}

@@ -1,4 +1,3 @@
-import { useFinanceData } from '../context/FinanceDataContext';
 import { peekNextInvoiceNumber } from '../lib/invoiceNumber';
 import type { InvoiceDocumentData, InvoiceLineItem, LineUnitLabel, PartyDetails } from '../types/invoiceDocument';
 import { createLineItem, documentSubtotal, lineAmount } from '../types/invoiceDocument';
@@ -71,7 +70,6 @@ function PartyBlock({
 }
 
 export default function InvoiceDocumentForm({ idPrefix, value, onChange, compact }: InvoiceDocumentFormProps) {
-  const { tenantId } = useFinanceData();
   const sub = documentSubtotal(value);
 
   const setDoc = (patch: Partial<InvoiceDocumentData>) => onChange({ ...value, ...patch });
@@ -114,7 +112,7 @@ export default function InvoiceDocumentForm({ idPrefix, value, onChange, compact
                 type="button"
                 onClick={() =>
                   setDoc({
-                    invoiceNumber: peekNextInvoiceNumber(tenantId),
+                    invoiceNumber: peekNextInvoiceNumber(),
                   })
                 }
                 className="shrink-0 text-sm font-medium text-ink-black/80 px-3 py-2 rounded-2xl border border-ink-black/20 hover:bg-ink-black/5"
@@ -122,7 +120,7 @@ export default function InvoiceDocumentForm({ idPrefix, value, onChange, compact
                 Use next
               </button>
             </div>
-            <p className="text-xs text-ink-black/40 mt-1.5">Sequential id (e.g. INV-2026-001). Use next assigns from your tenant counter.</p>
+            <p className="text-xs text-ink-black/40 mt-1.5">Sequential id (e.g. INV-2026-001). Use next assigns from your saved counter in this browser.</p>
           </div>
           <div>
             <label

@@ -36,8 +36,6 @@ import {
 import { API_BASE as API_URL } from '../lib/apiBase';
 
 type FinanceDataContextValue = {
-  tenantId: string;
-  setTenantId: (id: string) => void;
   clients: any[];
   suppliers: any[];
   transactions: any[];
@@ -71,30 +69,22 @@ type FinanceDataContextValue = {
 
 const FinanceDataContext = createContext<FinanceDataContextValue | null>(null);
 
-export function FinanceDataProvider({
-  tenantId,
-  setTenantId,
-  children,
-}: {
-  tenantId: string;
-  setTenantId: (id: string) => void;
-  children: ReactNode;
-}) {
+export function FinanceDataProvider({ children }: { children: ReactNode }) {
   const [clients, setClients] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [stockholders, setStockholders] = useState<any[]>([]);
   const [plugins, setPlugins] = useState<PluginsState>({ installed: [], available: [] });
   const [pluginToggles, setPluginTogglesState] = useState<Record<string, boolean>>(() =>
-    loadPluginToggles(tenantId)
+    loadPluginToggles()
   );
   const [taxReserve, setTaxReserve] = useState<any | null>(null);
   const [forecast, setForecast] = useState<any[]>([]);
   const [invoiceExportConfig, setInvoiceExportState] = useState<InvoiceExportConfig>(() =>
-    loadInvoiceExport(tenantId)
+    loadInvoiceExport()
   );
-  const [regExtra, setRegExtra] = useState<CategoryRegistryExtra>(() => loadRegistryExtra(tenantId));
-  const [assignments, setAssignments] = useState<CategoryAssignments>(() => loadAssignments(tenantId));
+  const [regExtra, setRegExtra] = useState<CategoryRegistryExtra>(() => loadRegistryExtra());
+  const [assignments, setAssignments] = useState<CategoryAssignments>(() => loadAssignments());
   const [smartCategorizeBusy, setSmartCategorizeBusy] = useState(false);
   const [smartCategorizeError, setSmartCategorizeError] = useState<string | null>(null);
   const [smartCategorizeSuccess, setSmartCategorizeSuccess] = useState<string | null>(null);
@@ -107,19 +97,6 @@ export function FinanceDataProvider({
     catAsgRef.current = assignments;
   }, [assignments]);
 
-  useEffect(() => {
-    setPluginTogglesState(loadPluginToggles(tenantId));
-  }, [tenantId]);
-
-  useEffect(() => {
-    setInvoiceExportState(loadInvoiceExport(tenantId));
-  }, [tenantId]);
-
-  useEffect(() => {
-    setRegExtra(loadRegistryExtra(tenantId));
-    setAssignments(loadAssignments(tenantId));
-  }, [tenantId]);
-
   const setInvoiceExportConfig = useCallback(
     (
       update:
@@ -128,21 +105,20 @@ export function FinanceDataProvider({
     ) => {
       setInvoiceExportState((prev) => {
         const next = typeof update === 'function' ? update(prev) : { ...prev, ...update };
-        saveInvoiceExport(tenantId, next);
+        saveInvoiceExport(next);
         return next;
       });
     },
-    [tenantId]
+    []
   );
 
   const refresh = useCallback(async () => {
-    const headers = { 'x-tenant-id': tenantId };
     try {
       const [clientsRes, suppliersRes, transRes, stockRes, pluginsRes] = await Promise.all([
-        axios.get(`${API_URL}/core/clients`, { headers }),
-        axios.get(`${API_URL}/core/suppliers`, { headers }),
-        axios.get(`${API_URL}/core/transactions`, { headers }),
-        axios.get(`${API_URL}/core/stockholders`, { headers }),
+        axios.get(`${API_URL}/core/clients`),
+        axios.get(`${API_URL}/core/suppliers`),
+        axios.get(`${API_URL}/core/transactions`),
+        axios.get(`${API_URL}/core/stockholders`),
         axios.get(`${API_URL}/plugins`),
       ]);
       setClients(clientsRes.data);
@@ -155,16 +131,13 @@ export function FinanceDataProvider({
         .map((p) => p.id)
         .filter((id) => isPluginToggledOn(pluginToggles, id));
       if (installedIds.includes('tax_calculator')) {
-        const taxRes = await axios.get(`${API_URL}/plugins/tax_calculator/estimate`, { headers });
+        const taxRes = await axios.get(`${API_URL}/plugins/tax_calculator/estimate`);
         setTaxReserve(taxRes.data);
       } else {
         setTaxReserve(null);
       }
       if (installedIds.includes('ai_prediction')) {
-        const forecastRes = await axios.get(
-          `${API_URL}/plugins/ai_prediction/forecast`,
-          { headers }
-        );
+        const forecastRes = await axios.get(`${API_URL}/plugins/ai_prediction/forecast`);
         setForecast(forecastRes.data.forecast);
       } else {
         setForecast([]);
@@ -172,7 +145,7 @@ export function FinanceDataProvider({
     } catch (e) {
       console.error('FinanceData refresh error:', e);
     }
-  }, [tenantId, pluginToggles]);
+  }, [pluginToggles]);
 
   useEffect(() => {
     void refresh();
@@ -193,21 +166,18 @@ export function FinanceDataProvider({
     [isPluginInstalled, isPluginEnabled]
   );
 
-  const setPluginEnabled = useCallback(
-    (id: string, enabled: boolean) => {
-      setPluginTogglesState((prev) => {
-        const next = { ...prev };
-        if (enabled) {
-          delete next[id];
-        } else {
-          next[id] = false;
-        }
-        savePluginToggles(tenantId, next);
-        return next;
-      });
-    },
-    [tenantId]
-  );
+  const setPluginEnabled = useCallback((id: string, enabled: boolean) => {
+    setPluginTogglesState((prev) => {
+      const next = { ...prev };
+      if (enabled) {
+        delete next[id];
+      } else {
+        next[id] = false;
+      }
+      savePluginToggles(next);
+      return next;
+    });
+  }, []);
 
   const searchExpenses = useCallback(
     async (query: string) => {
@@ -215,12 +185,11 @@ export function FinanceDataProvider({
         return [] as any[];
       }
       const res = await axios.get(
-        `${API_URL}/plugins/expense_categorizer/search?query=${encodeURIComponent(query)}`,
-        { headers: { 'x-tenant-id': tenantId } }
+        `${API_URL}/plugins/expense_categorizer/search?query=${encodeURIComponent(query)}`
       );
       return res.data.results as any[];
     },
-    [tenantId, pluginToggles]
+    [pluginToggles]
   );
 
   const downloadInvoice = useCallback(
@@ -236,7 +205,6 @@ export function FinanceDataProvider({
           body,
           {
             headers: {
-              'x-tenant-id': tenantId,
               'Content-Type': 'application/json',
             },
             responseType: 'blob',
@@ -249,7 +217,7 @@ export function FinanceDataProvider({
 
         const clientRow = clients.find((x) => x.id === clientId);
         const doc = config.document ?? defaultInvoiceDocument();
-        appendInvoiceHistory(tenantId, {
+        appendInvoiceHistory({
           clientId,
           clientName: (clientRow?.name as string) ?? clientId,
           invoiceNumber: (config.document?.invoiceNumber && config.document.invoiceNumber.trim()) || '—',
@@ -263,7 +231,7 @@ export function FinanceDataProvider({
           detail: buildHistoryDetail(doc),
           presentationTitle: (doc.invoiceNumber || '').trim() || (clientRow?.name as string) || undefined,
         });
-        bumpInvoiceSequence(tenantId);
+        bumpInvoiceSequence();
 
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
@@ -296,7 +264,7 @@ export function FinanceDataProvider({
         throw e;
       }
     },
-    [tenantId, pluginToggles, invoiceExportConfig, clients]
+    [pluginToggles, invoiceExportConfig, clients]
   );
 
   const getOptionsForKind = useCallback(
@@ -321,32 +289,29 @@ export function FinanceDataProvider({
     [assignments]
   );
 
-  const setEntityCategory = useCallback(
-    (kind: EntityKind, id: string, value: string) => {
-      if (!id) return;
-      if (!value.trim()) {
-        setAssignments((a) => {
-          const nextMap = { ...a[kind] };
-          delete nextMap[id];
-          const n = { ...a, [kind]: nextMap };
-          saveAssignments(tenantId, n);
-          return n;
-        });
-        return;
-      }
-      setRegExtra((re) => {
-        const next = addLabelsToRegistry(kind, [value], re);
-        saveRegistryExtra(tenantId, next);
-        return next;
-      });
+  const setEntityCategory = useCallback((kind: EntityKind, id: string, value: string) => {
+    if (!id) return;
+    if (!value.trim()) {
       setAssignments((a) => {
-        const n = { ...a, [kind]: { ...a[kind], [id]: value } };
-        saveAssignments(tenantId, n);
+        const nextMap = { ...a[kind] };
+        delete nextMap[id];
+        const n = { ...a, [kind]: nextMap };
+        saveAssignments(n);
         return n;
       });
-    },
-    [tenantId]
-  );
+      return;
+    }
+    setRegExtra((re) => {
+      const next = addLabelsToRegistry(kind, [value], re);
+      saveRegistryExtra(next);
+      return next;
+    });
+    setAssignments((a) => {
+      const n = { ...a, [kind]: { ...a[kind], [id]: value } };
+      saveAssignments(n);
+      return n;
+    });
+  }, []);
 
   const runSmartCategorize = useCallback(async () => {
     if (!isPluginToggledOn(pluginToggles, 'expense_categorizer')) {
@@ -397,9 +362,9 @@ export function FinanceDataProvider({
           transactions: uncTrans,
           stockholders: uncStock,
         },
-        { headers: { 'x-tenant-id': tenantId, 'Content-Type': 'application/json' } }
+        { headers: { 'Content-Type': 'application/json' } }
       );
-      const out = applyAiLayer(tenantId, catRegRef.current, catAsgRef.current, {
+      const out = applyAiLayer(catRegRef.current, catAsgRef.current, {
         clients: data.clients,
         suppliers: data.suppliers,
         transactions: data.transactions,
@@ -435,12 +400,10 @@ export function FinanceDataProvider({
     } finally {
       setSmartCategorizeBusy(false);
     }
-  }, [tenantId, pluginToggles, clients, suppliers, transactions, stockholders, assignments]);
+  }, [pluginToggles, clients, suppliers, transactions, stockholders, assignments]);
 
   const value = useMemo(
     () => ({
-      tenantId,
-      setTenantId,
       clients,
       suppliers,
       transactions,
@@ -468,8 +431,6 @@ export function FinanceDataProvider({
       smartCategorizeSuccess,
     }),
     [
-      tenantId,
-      setTenantId,
       clients,
       suppliers,
       transactions,

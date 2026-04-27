@@ -21,7 +21,6 @@ export default function Activity() {
     forecast,
     isPluginActive,
     searchExpenses,
-    tenantId,
   } = useFinanceData();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -285,7 +284,6 @@ export default function Activity() {
       {showTransaction && (
         <TransactionShowModal
           transaction={showTransaction}
-          tenantId={tenantId}
           onClose={() => setShowTransaction(null)}
         />
       )}

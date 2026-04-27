@@ -40,6 +40,17 @@ export default function Marketplace() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [addPluginOpen, setAddPluginOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefreshPlugins = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const allPlugins = useMemo(
     () => mergePlugins(installed, available),
@@ -62,7 +73,7 @@ export default function Marketplace() {
         <h1 className="mb-4 text-3xl md:text-4xl font-medium tracking-tight">Plugin marketplace</h1>
         <p className="text-lg text-ink-black/80 max-w-2xl">
           Extend FinanceFlow with specialized modules. Use the switch to enable or disable each plugin
-          for this tenant. Install by moving a folder into{' '}
+          for this app. Install by moving a folder into{' '}
           <code className="text-sm bg-ink-black/5 px-2 py-0.5 rounded-lg">plugins/</code> on the
           server, then refresh this list.
         </p>
@@ -102,12 +113,23 @@ export default function Marketplace() {
               </h2>
               <button
                 type="button"
-                onClick={() => void refresh()}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ink-black/20 text-ink-black/70 hover:bg-ink-black/[0.05] hover:text-ink-black transition-colors"
+                onClick={() => void handleRefreshPlugins()}
+                disabled={refreshing}
+                aria-busy={refreshing}
                 aria-label="Refresh plugin list"
                 title="Refresh plugin list"
+                className={[
+                  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ink-black/20 text-ink-black/70 transition-colors',
+                  'hover:enabled:bg-ink-black/[0.05] hover:enabled:text-ink-black',
+                  'disabled:opacity-60 disabled:cursor-wait',
+                ].join(' ')}
               >
-                <RefreshCw size={18} strokeWidth={1.75} aria-hidden />
+                <RefreshCw
+                  size={18}
+                  strokeWidth={1.75}
+                  aria-hidden
+                  className={refreshing ? 'animate-spin motion-reduce:animate-none' : undefined}
+                />
               </button>
               <span className="text-sm text-ink-black/50 tabular-nums" aria-live="polite">
                 {filteredPlugins.length === allPlugins.length
@@ -125,8 +147,9 @@ export default function Marketplace() {
                 Search plugins
               </label>
               <Search
-                className="absolute left-0 top-1/2 -translate-y-1/2 text-ink-black/40 pointer-events-none"
-                size={20}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-black/50 pointer-events-none"
+                size={18}
+                strokeWidth={1.75}
                 aria-hidden
               />
               <input
@@ -135,7 +158,7 @@ export default function Marketplace() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name, id, or description"
-                className="w-full pl-9 pr-3 py-3 bg-white/80 border-b-2 border-ink-black/20 rounded-none outline-none text-base focus:border-ink-black transition-colors placeholder:text-ink-black/40"
+                className="w-full py-2.5 pl-10 pr-4 rounded-full border-2 border-ink-black/15 bg-white/80 text-sm font-medium text-ink-black/80 outline-none transition-colors focus:border-ink-black hover:border-ink-black/30 focus:ring-0 placeholder:text-ink-black/40 placeholder:font-normal"
                 autoComplete="off"
               />
             </div>

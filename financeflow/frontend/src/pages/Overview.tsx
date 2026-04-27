@@ -27,7 +27,7 @@ export default function Overview() {
           at a glance.
         </h1>
         <p className="text-lg text-ink-black/80 max-w-md mb-8">
-          Snapshot of your tenant: inflow, outflow, and recent activity. Use the sidebar for
+          Snapshot of your finances: inflow, outflow, and recent activity. Use the sidebar for
           detailed analytics, contacts, and transactions.
         </p>
         <div className="flex flex-wrap gap-3">

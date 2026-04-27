@@ -38,7 +38,12 @@ def _load_all() -> dict:
     try:
         raw = _DATA_FILE.read_text(encoding="utf-8")
         data = json.loads(raw)
-        return data if isinstance(data, dict) else {}
+        if not isinstance(data, dict):
+            return {}
+        # Legacy multi-tenant keys: copy first org into `default`
+        if "default" not in data and "tenant_a" in data and isinstance(data.get("tenant_a"), dict):
+            data = {**data, "default": data["tenant_a"]}
+        return data
     except (OSError, json.JSONDecodeError):
         return {}
 
@@ -246,7 +251,7 @@ def send_test_email(tenant_id: TenantId, body: TestEmailBody):
         raise HTTPException(status_code=503, detail="No SMTP password: save one in the form or set FF_SMTP_PASSWORD.")
 
     text = (body.text or "").strip() or (
-        f"This is a test from FinanceFlow for tenant {tenant_id}. If you received this, SMTP is set up."
+        "This is a test from FinanceFlow. If you received this, SMTP is set up."
     )
     subj = (body.subject or "FinanceFlow — test email").strip()
 

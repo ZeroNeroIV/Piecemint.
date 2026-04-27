@@ -8,8 +8,9 @@ import {
   type InvoiceLineItem,
   type LineUnitLabel,
 } from '../types/invoiceDocument';
+import { getItemMigrated, setItemMigrated } from './localStorageScope';
 
-const key = (tenantId: string) => `ff_invoice_export_v1_${tenantId}`;
+const STORAGE_KEY = 'ff_invoice_export_v1';
 
 function isFormat(v: string): v is InvoiceExportConfig['outputFormat'] {
   return v === 'pdf' || v === 'xlsx' || v === 'docx';
@@ -73,12 +74,12 @@ function parseDocument(raw: unknown): InvoiceDocumentData {
   };
 }
 
-export function loadInvoiceExport(tenantId: string): InvoiceExportConfig {
+export function loadInvoiceExport(): InvoiceExportConfig {
   if (typeof localStorage === 'undefined') {
     return { ...defaultInvoiceExportConfig };
   }
   try {
-    const raw = localStorage.getItem(key(tenantId));
+    const raw = getItemMigrated(STORAGE_KEY);
     if (!raw) return { ...defaultInvoiceExportConfig };
     const o = JSON.parse(raw) as Record<string, unknown>;
     if (!o || typeof o !== 'object') return { ...defaultInvoiceExportConfig };
@@ -103,11 +104,6 @@ export function loadInvoiceExport(tenantId: string): InvoiceExportConfig {
   }
 }
 
-export function saveInvoiceExport(tenantId: string, c: InvoiceExportConfig) {
-  if (typeof localStorage === 'undefined') return;
-  try {
-    localStorage.setItem(key(tenantId), JSON.stringify(c));
-  } catch (e) {
-    console.error('Invoice export config save failed', e);
-  }
+export function saveInvoiceExport(c: InvoiceExportConfig) {
+  setItemMigrated(STORAGE_KEY, JSON.stringify(c));
 }

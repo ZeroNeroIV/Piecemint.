@@ -1,12 +1,13 @@
 import { documentSubtotal, type InvoiceDocumentData } from '../types/invoiceDocument';
 import type { InvoiceOutputFormat } from '../types/invoiceExport';
+import { getItemMigrated, setItemMigrated } from './localStorageScope';
 
 function asOutputFormat(v: unknown): InvoiceOutputFormat {
   if (v === 'pdf' || v === 'xlsx' || v === 'docx') return v;
   return 'pdf';
 }
 
-const key = (tenantId: string) => `ff_invoice_history_v1_${tenantId}`;
+const STORAGE_KEY = 'ff_invoice_history_v1';
 
 /** Line items + parties stored at download time for the “Show” panel. */
 export type InvoiceHistoryDetail = {
@@ -102,10 +103,10 @@ function parseList(raw: string | null): InvoiceHistoryEntry[] {
   }
 }
 
-export function loadInvoiceHistory(tenantId: string): InvoiceHistoryEntry[] {
+export function loadInvoiceHistory(): InvoiceHistoryEntry[] {
   if (typeof localStorage === 'undefined') return [];
   try {
-    return parseList(localStorage.getItem(key(tenantId))).sort(
+    return parseList(getItemMigrated(STORAGE_KEY)).sort(
       (a, b) => (b.createdAt > a.createdAt ? 1 : b.createdAt < a.createdAt ? -1 : 0)
     );
   } catch {
@@ -114,24 +115,22 @@ export function loadInvoiceHistory(tenantId: string): InvoiceHistoryEntry[] {
 }
 
 export function updateInvoiceHistoryEntry(
-  tenantId: string,
   id: string,
   patch: Partial<Pick<InvoiceHistoryEntry, 'presentationTitle'>>
 ): void {
   if (typeof localStorage === 'undefined') return;
-  const list = parseList(localStorage.getItem(key(tenantId)));
+  const list = parseList(getItemMigrated(STORAGE_KEY));
   const i = list.findIndex((e) => e.id === id);
   if (i < 0) return;
   list[i] = { ...list[i], ...patch };
   try {
-    localStorage.setItem(key(tenantId), JSON.stringify(list));
+    setItemMigrated(STORAGE_KEY, JSON.stringify(list));
   } catch (e) {
     console.error('updateInvoiceHistoryEntry', e);
   }
 }
 
 export function appendInvoiceHistory(
-  tenantId: string,
   entry: Omit<InvoiceHistoryEntry, 'id' | 'createdAt'> & { id?: string }
 ): InvoiceHistoryEntry {
   if (typeof localStorage === 'undefined') {
@@ -149,7 +148,7 @@ export function appendInvoiceHistory(
       detail: entry.detail,
     };
   }
-  const list = parseList(localStorage.getItem(key(tenantId)));
+  const list = parseList(getItemMigrated(STORAGE_KEY));
   const row: InvoiceHistoryEntry = {
     id: entry.id && entry.id.length > 0 ? entry.id : `inv-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     clientId: entry.clientId,
@@ -166,7 +165,7 @@ export function appendInvoiceHistory(
   list.unshift(row);
   const trimmed = list.slice(0, 200);
   try {
-    localStorage.setItem(key(tenantId), JSON.stringify(trimmed));
+    setItemMigrated(STORAGE_KEY, JSON.stringify(trimmed));
   } catch (e) {
     console.error('appendInvoiceHistory', e);
   }

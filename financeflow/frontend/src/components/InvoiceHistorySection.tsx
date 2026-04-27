@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Eye, Pencil } from 'lucide-react';
-import { useFinanceData } from '../context/FinanceDataContext';
 import {
   loadInvoiceHistory,
   updateInvoiceHistoryEntry,
@@ -63,12 +62,11 @@ function LineItemsTable({ detail }: { detail: InvoiceHistoryDetail | undefined }
 
 type ShowModalProps = {
   entry: InvoiceHistoryEntry;
-  tenantId: string;
   onClose: () => void;
   onUpdated: () => void;
 };
 
-function InvoiceHistoryShowModal({ entry, tenantId, onClose, onUpdated }: ShowModalProps) {
+function InvoiceHistoryShowModal({ entry, onClose, onUpdated }: ShowModalProps) {
   const [titleDraft, setTitleDraft] = useState(
     () => entry.presentationTitle?.trim() || defaultTitle(entry)
   );
@@ -83,14 +81,14 @@ function InvoiceHistoryShowModal({ entry, tenantId, onClose, onUpdated }: ShowMo
     const next = titleDraft.trim();
     setSaving(true);
     try {
-      updateInvoiceHistoryEntry(tenantId, entry.id, {
+      updateInvoiceHistoryEntry(entry.id, {
         presentationTitle: next || undefined,
       });
       onUpdated();
     } finally {
       setSaving(false);
     }
-  }, [tenantId, entry.id, titleDraft, onUpdated]);
+  }, [entry.id, titleDraft, onUpdated]);
 
   return (
     <div
@@ -218,13 +216,12 @@ function InvoiceHistoryShowModal({ entry, tenantId, onClose, onUpdated }: ShowMo
 }
 
 export default function InvoiceHistorySection() {
-  const { tenantId } = useFinanceData();
-  const [rows, setRows] = useState<InvoiceHistoryEntry[]>(() => loadInvoiceHistory(tenantId));
+  const [rows, setRows] = useState<InvoiceHistoryEntry[]>(() => loadInvoiceHistory());
   const [showId, setShowId] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
-    setRows(loadInvoiceHistory(tenantId));
-  }, [tenantId]);
+    setRows(loadInvoiceHistory());
+  }, []);
 
   useEffect(() => {
     refresh();
@@ -247,8 +244,8 @@ export default function InvoiceHistorySection() {
       <div className="card p-6 md:p-8">
         <h2 className="text-sm font-bold tracking-widest uppercase text-ink-black/50 mb-2">Invoice history</h2>
         <p className="text-ink-black/60 text-sm max-w-2xl">
-          Generated files are listed here (saved in this browser per tenant) after you download an invoice from the
-          clients page. Open this page after a download to see new entries.
+          Generated files are listed here (saved in this browser) after you download an invoice from the clients page.
+          Open this page after a download to see new entries.
         </p>
       </div>
     );
@@ -258,8 +255,8 @@ export default function InvoiceHistorySection() {
     <div className="card p-6 md:p-8 overflow-x-auto">
       <h2 className="text-sm font-bold tracking-widest uppercase text-ink-black/50 mb-2">Invoice history</h2>
       <p className="text-ink-black/50 text-xs mb-4 max-w-2xl">
-        Recent exports from this device (per tenant), newest first. Last 200 kept. Use <strong>Show</strong> to open a
-        full snapshot for presentations and to edit the display label.
+        Recent exports from this device, newest first. Last 200 kept. Use <strong>Show</strong> to open a full snapshot
+        for presentations and to edit the display label.
       </p>
       <table className="w-full min-w-[720px] text-sm border-collapse">
         <thead>
@@ -312,7 +309,6 @@ export default function InvoiceHistorySection() {
         <InvoiceHistoryShowModal
           key={showEntry.id}
           entry={showEntry}
-          tenantId={tenantId}
           onClose={() => setShowId(null)}
           onUpdated={refresh}
         />

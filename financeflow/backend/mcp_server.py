@@ -4,7 +4,8 @@ FinanceFlow MCP server — stdio transport, shares the same SQLite DB as FastAPI
 Run (from repo / Cursor MCP config):
   cd financeflow/backend && source venv/bin/activate && python mcp_server.py
 
-Tools resolve tenants by `tenant_id` (e.g. tenant_a) or display name (e.g. "Acme Corp").
+Tools scope to the single built-in org; the `tenant` argument accepts id, legacy ids
+(tenant_a, tenant_b), or the org display name.
 """
 
 from __future__ import annotations
@@ -35,7 +36,10 @@ try:
 finally:
     _db0.close()
 
-mcp = FastMCP("FinanceFlow", instructions="Read and modify FinanceFlow data per tenant. Use list_tenants to see ids and names. Use add_stockholder with tenant_id or tenant name.")
+mcp = FastMCP(
+    "FinanceFlow",
+    instructions="Read and modify FinanceFlow data (single org). list_tenants returns the org id and name. Tool `tenant` args accept id, legacy names, or org display name.",
+)
 
 
 @contextmanager
@@ -62,7 +66,7 @@ def list_tenants() -> str:
 
 @mcp.tool()
 def get_clients(tenant: str) -> str:
-    """List clients for a tenant. `tenant` may be the tenant_id (e.g. tenant_a) or display name (e.g. Acme Corp)."""
+    """List clients. `tenant` may be org id, legacy id (tenant_a / tenant_b), or display name."""
     with session_scope() as db:
         tid = resolve_tenant_id(db, tenant)
         if not tid:

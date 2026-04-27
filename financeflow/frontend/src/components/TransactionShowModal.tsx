@@ -10,8 +10,6 @@ export type TransactionRecord = {
 
 type TransactionShowModalProps = {
   transaction: TransactionRecord;
-  /** Current tenant id from app context (not returned on each row). */
-  tenantId: string;
   onClose: () => void;
 };
 
@@ -21,7 +19,7 @@ function fmtAmount(amount: number) {
   return `${neg ? '−' : ''}$${s}`;
 }
 
-export default function TransactionShowModal({ transaction: t, tenantId, onClose }: TransactionShowModalProps) {
+export default function TransactionShowModal({ transaction: t, onClose }: TransactionShowModalProps) {
   return (
     <div
       className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"
@@ -80,10 +78,6 @@ export default function TransactionShowModal({ transaction: t, tenantId, onClose
           <div>
             <dt className="text-xs font-bold tracking-widest uppercase text-ink-black/45 mb-1">Last activity</dt>
             <dd className="text-ink-black">{t.last_activity}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-bold tracking-widest uppercase text-ink-black/45 mb-1">Viewing as tenant</dt>
-            <dd className="font-mono text-xs break-all text-ink-black/80">{tenantId}</dd>
           </div>
         </dl>
         <button type="button" onClick={onClose} className="mt-8 pill-button w-full sm:w-auto">
