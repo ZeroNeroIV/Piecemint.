@@ -1,11 +1,22 @@
 import { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
-import { 
-  Search, ArrowRight,
-  BrainCircuit, FileText, PieChart, Calculator, 
-  Briefcase, Users, TrendingUp, Mail, Bell, Puzzle
+import {
+  Search,
+  BrainCircuit,
+  FileText,
+  PieChart,
+  Calculator,
+  Briefcase,
+  Users,
+  TrendingUp,
+  Mail,
+  Bell,
+  Puzzle,
+  Download,
+  LayoutDashboard,
 } from 'lucide-react'
 import ForDevelopers from './ForDevelopers'
+import { marketplaceApiPath, MAIN_APP_URL } from './lib/urls'
 
 interface Plugin {
   id: string;
@@ -33,6 +44,8 @@ function App() {
   const [activeTab, setActiveTab] = useState<'plugins' | 'developers'>('plugins');
   const [globalSearch, setGlobalSearch] = useState('');
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const globalSearchRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,10 +57,41 @@ function App() {
   };
 
   useEffect(() => {
-    axios.get('http://localhost:8001/api/plugins')
-      .then(res => setPlugins(res.data))
-      .catch(err => console.error("Error fetching plugins:", err));
+    axios
+      .get<Plugin[]>(marketplaceApiPath('/api/plugins'))
+      .then((res) => {
+        setCatalogError(null)
+        setPlugins(res.data)
+      })
+      .catch(() => {
+        setCatalogError('Could not load catalog. Start the marketplace API on port 8001.')
+        console.error('Error fetching plugins: marketplace API unreachable')
+      })
   }, []);
+
+  const downloadPluginZip = async (pluginId: string) => {
+    if (downloadingId) return
+    setDownloadingId(pluginId)
+    try {
+      const url = marketplaceApiPath(`/api/plugins/${encodeURIComponent(pluginId)}/download`)
+      const res = await fetch(url)
+      if (!res.ok) {
+        throw new Error(await res.text())
+      }
+      const blob = await res.blob()
+      const a = document.createElement('a')
+      const objectUrl = URL.createObjectURL(blob)
+      a.href = objectUrl
+      a.download = `${pluginId}.ffplugin.zip`
+      a.click()
+      URL.revokeObjectURL(objectUrl)
+    } catch (e) {
+      console.error(e)
+      alert('Download failed. Is the marketplace API running on http://localhost:8001 ?')
+    } finally {
+      setDownloadingId(null)
+    }
+  }
 
   const filtered = plugins.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -84,7 +128,9 @@ function App() {
             isGlobalSearchOpen ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0 pointer-events-auto'
           }`}
         >
-          <div className="font-bold text-xl tracking-[-0.02em]">Piecemint<span className="text-[var(--color-signal-orange)] text-2xl leading-none">.</span></div>
+          <div className="font-bold text-xl tracking-[-0.02em] text-ink-black">
+            Piecemint<span className="text-signal-orange text-2xl leading-none">.</span>
+          </div>
           <div className="hidden md:flex gap-14 font-medium text-[16px]">
             <button 
               className={`hover:opacity-70 transition-opacity ${activeTab === 'plugins' ? 'text-[var(--color-signal-orange)]' : ''}`}
@@ -99,11 +145,32 @@ function App() {
               For developers
             </button>
           </div>
-          <div 
-            className="w-12 h-12 bg-white rounded-full flex items-center justify-center border border-ink-black/10 cursor-pointer hover:bg-canvas-cream transition-colors"
-            onClick={handleNavSearchClick}
-          >
-            <Search size={20} />
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href={MAIN_APP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex h-12 items-center gap-2 rounded-full border border-ink-black/10 bg-white px-4 text-sm font-medium text-ink-black no-underline hover:bg-canvas-cream transition-colors"
+              title="Open the Piecemint web app"
+            >
+              <LayoutDashboard size={18} aria-hidden />
+              Open app
+            </a>
+            <div 
+              className="w-12 h-12 bg-white rounded-full flex items-center justify-center border border-ink-black/10 cursor-pointer hover:bg-canvas-cream transition-colors"
+              onClick={handleNavSearchClick}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleNavSearchClick()
+                }
+              }}
+              aria-label="Open search"
+            >
+              <Search size={20} />
+            </div>
           </div>
         </div>
 
@@ -195,8 +262,14 @@ function App() {
           <>
             <div className="mb-24 max-w-2xl">
               <h1 className="text-[48px] md:text-[64px] leading-none mb-6">Extend your ecosystem.</h1>
+              {catalogError && (
+                <p className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+                  {catalogError}
+                </p>
+              )}
               <p className="text-[16px] opacity-80 leading-[1.4] max-w-lg mb-8">
-                Discover modules tailored for accounting, tax, and automated financial forecasting. Build exactly what you need.
+                Discover modules tailored for accounting, tax, and automated financial forecasting. Download a bundle and
+                import it in Piecemint under <strong>Plugin library → Add your plugin → Upload .zip</strong>.
               </p>
               
               <div className="relative max-w-md">
@@ -227,9 +300,20 @@ function App() {
                         <h3 className="text-[24px] leading-[1.2]">{plugin.name}</h3>
                       </div>
                       
-                      {/* Satellite CTA */}
-                      <button className="absolute bottom-4 right-2 w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-[0px_8px_24px_rgba(0,0,0,0.12)] hover:scale-110 transition-transform">
-                        <ArrowRight size={20} />
+                      {/* Download bundle */}
+                      <button
+                        type="button"
+                        onClick={() => void downloadPluginZip(plugin.id)}
+                        disabled={downloadingId !== null}
+                        className="absolute bottom-4 right-2 w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-[0px_8px_24px_rgba(0,0,0,0.12)] hover:scale-110 transition-transform disabled:opacity-50"
+                        title="Download .ffplugin.zip for Piecemint"
+                        aria-label={`Download ${plugin.name} bundle`}
+                      >
+                        {downloadingId === plugin.id ? (
+                          <span className="text-xs font-bold text-ink-black/50">…</span>
+                        ) : (
+                          <Download size={20} aria-hidden />
+                        )}
                       </button>
                     </div>
 
@@ -242,11 +326,19 @@ function App() {
                       {plugin.description}
                     </p>
                     
-                    <div className="mt-auto">
+                    <div className="mt-auto flex flex-col items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => void downloadPluginZip(plugin.id)}
+                        disabled={downloadingId !== null}
+                        className="pill-button-secondary text-sm py-2 px-4 disabled:opacity-50"
+                      >
+                        {downloadingId === plugin.id ? 'Preparing…' : 'Download for Piecemint'}
+                      </button>
                       {plugin.is_free ? (
                         <span className="price-pill uppercase tracking-[0.04em]">Free</span>
                       ) : (
-                        <button className="pill-button">{plugin.price}</button>
+                        <span className="text-sm font-medium text-ink-black/60">{plugin.price}</span>
                       )}
                     </div>
                   </div>

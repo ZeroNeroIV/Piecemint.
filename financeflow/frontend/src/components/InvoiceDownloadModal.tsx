@@ -12,9 +12,12 @@ type InvoiceDownloadModalProps = {
 };
 
 export default function InvoiceDownloadModal({ onClose, clientId, clientName }: InvoiceDownloadModalProps) {
-  const { invoiceExportConfig, setInvoiceExportConfig, downloadInvoice, clients } = useFinanceData();
+  const { invoiceExportConfig, setInvoiceExportConfig, downloadInvoice, sendInvoiceByEmail, clients } =
+    useFinanceData();
   const [draft, setDraft] = useState<InvoiceExportConfig>(() => ({ ...invoiceExportConfig }));
   const [saveAsDefault, setSaveAsDefault] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [sendBusy, setSendBusy] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const descId = useId();
@@ -51,6 +54,7 @@ export default function InvoiceDownloadModal({ onClose, clientId, clientName }: 
     }
     setDraft({ ...base, document: doc });
     setSaveAsDefault(false);
+    setRecipientEmail(client?.email ? String(client.email) : '');
   }, [invoiceExportConfig, clientId, client]);
 
   const patchDraft = useCallback((p: Partial<InvoiceExportConfig>) => {
@@ -93,6 +97,26 @@ export default function InvoiceDownloadModal({ onClose, clientId, clientName }: 
     }
   };
 
+  const onSendEmail = async () => {
+    const to = recipientEmail.trim();
+    if (!to) {
+      window.alert('Add a recipient email, or set one on the client record.');
+      return;
+    }
+    if (saveAsDefault) {
+      setInvoiceExportConfig(draft);
+    }
+    setSendBusy(true);
+    try {
+      await sendInvoiceByEmail(clientId, { config: draft, to });
+      onClose();
+    } catch {
+      /* Alert from context; keep dialog open. */
+    } finally {
+      setSendBusy(false);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"
@@ -116,11 +140,11 @@ export default function InvoiceDownloadModal({ onClose, clientId, clientName }: 
         <div className="shrink-0 flex items-start justify-between gap-3 px-5 pt-5 pb-2 sm:px-8 sm:pt-8 border-b border-ink-black/10">
           <div>
             <h2 id={titleId} className="text-xl font-medium text-ink-black pr-2">
-              Invoice before download
+              Invoice download or email
             </h2>
             <p id={descId} className="text-sm text-ink-black/60 mt-1">
-              Options below are loaded from your Invoice Generator settings. Tweak them for this file
-              only, or check &ldquo;Update saved settings&rdquo; to keep changes.
+              Options below are loaded from your Invoice Generator settings. Download a file, or send the
+              same file by email (SMTP from Email notifications). You can override the recipient below.
             </p>
             <p className="text-sm text-ink-black/80 mt-2">
               <span className="text-ink-black/50">Client:</span>{' '}
@@ -138,6 +162,20 @@ export default function InvoiceDownloadModal({ onClose, clientId, clientName }: 
         </div>
 
         <div className="overflow-y-auto flex-1 min-h-0 px-5 py-4 sm:px-8 sm:py-6">
+          <div className="mb-4">
+            <label htmlFor={`${titleId}-email`} className="block text-sm font-medium text-ink-black/80 mb-1">
+              Send to (email)
+            </label>
+            <input
+              id={`${titleId}-email`}
+              type="email"
+              autoComplete="email"
+              value={recipientEmail}
+              onChange={(e) => setRecipientEmail(e.target.value)}
+              placeholder="client@example.com"
+              className="w-full rounded-xl border border-ink-black/20 bg-white px-3 py-2 text-sm text-ink-black"
+            />
+          </div>
           <InvoiceExportForm
             idPrefix="modal-inv"
             value={draft}
@@ -160,6 +198,14 @@ export default function InvoiceDownloadModal({ onClose, clientId, clientName }: 
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
             <button type="button" onClick={handleClose} className="pill-button-secondary w-full sm:w-auto">
               Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void onSendEmail()}
+              disabled={sendBusy}
+              className="pill-button-secondary w-full sm:w-auto disabled:opacity-50"
+            >
+              {sendBusy ? 'Sending…' : 'Send by email'}
             </button>
             <button
               type="button"

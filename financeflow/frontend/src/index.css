@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400;450;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sofia+Sans:wght@400;450;500;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -20,8 +20,25 @@
 body {
   background-color: var(--canvas-cream);
   color: var(--ink-black);
-  font-family: 'Sofia Sans', Arial, sans-serif;
+  font-family: 'Inter', 'Sofia Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
   font-weight: 450;
+}
+
+/* Host for portaled modals — above AppLayout header (z-50) and sidebar (z-49); not inside main’s z-0 context */
+#ff-overlay-root {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  pointer-events: none;
+}
+
+#ff-overlay-root:not(:empty) {
+  pointer-events: auto;
+}
+
+#ff-overlay-root > * {
+  pointer-events: auto;
 }
 
 h1, h2, h3 {
@@ -103,4 +120,82 @@ h3 {
   border-radius: 999px;
   padding: 16px 40px;
   box-shadow: rgba(0, 0, 0, 0.04) 0px 4px 24px 0px;
+}
+
+/* Sidebar: expand animation (docking rail → full nav) */
+@keyframes ff-sidebar-panel-open {
+  0% {
+    opacity: 0;
+    transform: translate3d(-14px, 0, 0) scale(0.97);
+    transform-origin: left center;
+    filter: blur(6px);
+    box-shadow: 0px 4px 24px rgba(0, 0, 0, 0.04);
+  }
+  55% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(2px, 0, 0) scale(1.005);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+    box-shadow: 0px 12px 40px rgba(0, 0, 0, 0.12);
+  }
+}
+
+@keyframes ff-sidebar-item-open {
+  from {
+    opacity: 0;
+    transform: translate3d(-10px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.ff-sidebar-panel-open {
+  animation: ff-sidebar-panel-open 520ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.ff-sidebar-item-open {
+  animation: ff-sidebar-item-open 420ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-delay: var(--ff-sidebar-stagger, 0ms);
+}
+
+@keyframes ff-sidebar-panel-close {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: left center;
+    filter: blur(0);
+    box-shadow: 0px 12px 40px rgba(0, 0, 0, 0.12);
+  }
+  40% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(3px, 0, 0) scale(1.01);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-18px, 0, 0) scale(0.94);
+    filter: blur(8px);
+    box-shadow: 0px 4px 24px rgba(0, 0, 0, 0.04);
+  }
+}
+
+.ff-sidebar-panel-close {
+  animation: ff-sidebar-panel-close 460ms cubic-bezier(0.55, 0, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ff-sidebar-panel-open,
+  .ff-sidebar-item-open,
+  .ff-sidebar-panel-close {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
 }

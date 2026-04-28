@@ -1,5 +1,6 @@
 import type { InvoiceExportConfig, InvoiceOutputFormat, InvoiceFontFamily } from '../types/invoiceExport';
 import InvoiceDocumentForm from './InvoiceDocumentForm';
+import { INVOICE_TEMPLATES, applyInvoiceTemplate } from '../lib/invoiceTemplates';
 
 const formats: { id: InvoiceOutputFormat; label: string; hint: string }[] = [
   { id: 'pdf', label: 'PDF', hint: 'ReportLab' },
@@ -49,6 +50,29 @@ export default function InvoiceExportForm({
   const sp = compact ? 'space-y-4' : 'space-y-8';
   return (
     <div className={sp}>
+      <div>
+        <h3 className="text-sm font-bold tracking-widest uppercase text-ink-black/50 mb-2">
+          Layout templates
+        </h3>
+        <p className="text-xs text-ink-black/50 mb-3 max-w-2xl">
+          Start from a preset line-item and note layout. Your logo, colors, and file format below are kept unless the
+          template sets an accent override.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {INVOICE_TEMPLATES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onChange(applyInvoiceTemplate(t.id, c))}
+              className="inline-flex flex-col items-start rounded-2xl border-2 border-ink-black/15 bg-white/80 px-3 py-2 text-left transition-colors hover:border-ink-black/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-black/30"
+            >
+              <span className="text-sm font-medium text-ink-black">{t.label}</span>
+              <span className="text-xs text-ink-black/50">{t.hint}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div>
         <InvoiceDocumentForm
           idPrefix={idPrefix}

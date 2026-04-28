@@ -1,9 +1,9 @@
-import { BookOpen, FileCode2 } from 'lucide-react';
-import { useState } from 'react';
-import AddPluginModal from './components/AddPluginModal';
+import { BookOpen, LayoutDashboard } from 'lucide-react';
+
+import { MAIN_APP_URL } from './lib/urls';
 
 export default function ForDevelopers() {
-  const [addPluginOpen, setAddPluginOpen] = useState(false);
+  const appPluginsUrl = `${MAIN_APP_URL}/marketplace`;
 
   return (
     <div className="space-y-12 max-w-3xl pb-16 pt-12">
@@ -18,15 +18,19 @@ export default function ForDevelopers() {
             </p>
           </div>
         </div>
-        <div className="mt-8 flex gap-4">
-           <button
-            type="button"
-            onClick={() => setAddPluginOpen(true)}
-            className="pill-button inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+        <div className="mt-8 flex flex-col sm:flex-row flex-wrap gap-4">
+          <a
+            href={appPluginsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pill-button inline-flex items-center justify-center gap-2 no-underline w-full sm:w-auto"
           >
-            <FileCode2 size={18} aria-hidden />
-            Add your plugin
-          </button>
+            <LayoutDashboard size={18} aria-hidden />
+            Open Piecemint — install plugins
+          </a>
+          <p className="text-sm text-ink-black/60 self-center">
+            Bundles from this site are imported in the main app under <strong>Add your plugin → Upload .zip</strong>.
+          </p>
         </div>
       </header>
 
@@ -93,12 +97,12 @@ def hello():
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-xl font-medium tracking-tight">5. Add your plugin from the app</h2>
+        <h2 className="text-xl font-medium tracking-tight">5. Add your plugin from the Piecemint app</h2>
         <p className="text-ink-black/80">
-          On the plugin library page, <strong>Add your plugin</strong> can write <code className="text-xs">logic.py</code> and
-          a generated or pasted <code className="text-xs">manifest.yaml</code> into <code className="text-xs">plugins/&lt;id&gt;/</code> on
-          the machine running the API. For production, set <code className="text-xs">FF_DISABLE_PLUGIN_UPLOAD=1</code> on the server
-          to disable this. Always restart the API after installing.
+          In the <strong>Plugin library</strong> page inside Piecemint, <strong>Add your plugin</strong> can write files to{' '}
+          <code className="text-xs">plugins/&lt;id&gt;/</code> on the machine running the <em>Piecemint</em> API, or you can upload a{' '}
+          <code className="text-xs">.ffplugin.zip</code> downloaded from this marketplace. For production, set{' '}
+          <code className="text-xs">FF_DISABLE_PLUGIN_UPLOAD=1</code> on the server to disable uploads. Always restart the API after installing.
         </p>
       </section>
 
@@ -106,13 +110,6 @@ def hello():
         Reference: see existing plugins under <code className="text-xs">backend/plugins/</code> in this repository for
         full examples (e.g. tax calculator, invoice generator).
       </p>
-
-      {addPluginOpen && (
-        <AddPluginModal
-          onClose={() => setAddPluginOpen(false)}
-          onInstalled={() => {}}
-        />
-      )}
     </div>
   );
 }

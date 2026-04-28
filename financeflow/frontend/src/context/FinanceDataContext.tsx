@@ -57,6 +57,15 @@ type FinanceDataContextValue = {
       | ((prev: InvoiceExportConfig) => InvoiceExportConfig)
   ) => void;
   downloadInvoice: (clientId: string, configOverride?: InvoiceExportConfig) => Promise<void>;
+  sendInvoiceByEmail: (
+    clientId: string,
+    options?: {
+      config?: InvoiceExportConfig;
+      to?: string;
+      subject?: string;
+      body?: string;
+    }
+  ) => Promise<void>;
   getOptionsForKind: (kind: EntityKind) => string[];
   getEntityCategory: (kind: EntityKind, id: string, fallback?: string) => string;
   entityHasCustomCategory: (kind: EntityKind, id: string) => boolean;
@@ -267,6 +276,71 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
     [pluginToggles, invoiceExportConfig, clients]
   );
 
+  const sendInvoiceByEmail = useCallback(
+    async (
+      clientId: string,
+      options?: {
+        config?: InvoiceExportConfig;
+        to?: string;
+        subject?: string;
+        body?: string;
+      }
+    ) => {
+      if (!isPluginToggledOn(pluginToggles, 'invoice_gen')) {
+        return;
+      }
+      const config = options?.config ?? invoiceExportConfig;
+      const payload: Record<string, unknown> = { config: toInvoiceApiBody(config) };
+      if (options?.to?.trim()) payload.to = options.to.trim();
+      if (options?.subject?.trim()) payload.subject = options.subject.trim();
+      if (options?.body?.trim()) payload.body = options.body.trim();
+      try {
+        await axios.post(`${API_URL}/plugins/invoice_gen/email/${clientId}`, payload, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const clientRow = clients.find((x) => x.id === clientId);
+        const doc = config.document ?? defaultInvoiceDocument();
+        const built = buildHistoryDetail(doc);
+        appendInvoiceHistory({
+          clientId,
+          clientName: (clientRow?.name as string) ?? clientId,
+          invoiceNumber:
+            (config.document?.invoiceNumber && config.document.invoiceNumber.trim()) || '—',
+          issueDate: (config.document?.issueDate as string) || '—',
+          dueDate: (config.document?.dueDate as string) || '—',
+          amount: amountForHistory(
+            doc,
+            clientRow?.total_billed != null ? Number(clientRow.total_billed) : 0
+          ),
+          outputFormat: config.outputFormat,
+          detail: {
+            ...built,
+            notes: built.notes.trim()
+              ? `${built.notes}\n(sent by email)`
+              : '(sent by email)',
+          },
+          presentationTitle:
+            (doc.invoiceNumber || '').trim() || (clientRow?.name as string) || undefined,
+        });
+        bumpInvoiceSequence();
+      } catch (e: unknown) {
+        let msg =
+          'Could not send the invoice by email. Check SMTP settings in the Email notifications plugin and try again.';
+        if (axios.isAxiosError(e) && e.response?.data && typeof e.response.data === 'object') {
+          const d = e.response.data as { detail?: unknown };
+          if (typeof d.detail === 'string') {
+            msg = d.detail;
+          }
+        } else if (e instanceof Error && e.message) {
+          msg = e.message;
+        }
+        window.alert(msg);
+        throw e;
+      }
+    },
+    [pluginToggles, invoiceExportConfig, clients]
+  );
+
   const getOptionsForKind = useCallback(
     (kind: EntityKind) => optionsForKind(kind, regExtra),
     [regExtra]
@@ -421,6 +495,7 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
       invoiceExportConfig,
       setInvoiceExportConfig,
       downloadInvoice,
+      sendInvoiceByEmail,
       getOptionsForKind,
       getEntityCategory,
       entityHasCustomCategory,
@@ -448,6 +523,7 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
       invoiceExportConfig,
       setInvoiceExportConfig,
       downloadInvoice,
+      sendInvoiceByEmail,
       getOptionsForKind,
       getEntityCategory,
       entityHasCustomCategory,

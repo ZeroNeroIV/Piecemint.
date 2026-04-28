@@ -18,5 +18,25 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Flags common data-fetch and "reset on open/prop change" patterns; revisit when refactoring.
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
+  {
+    files: ['**/FinanceDataContext.tsx', '**/GlobalSearchModal.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: [
+      '**/FinanceDataContext.tsx',
+      '**/Activity.tsx',
+      '**/PluginPage.tsx',
+    ],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
   },
 ])

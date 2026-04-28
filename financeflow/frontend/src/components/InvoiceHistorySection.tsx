@@ -75,7 +75,7 @@ function InvoiceHistoryShowModal({ entry, onClose, onUpdated }: ShowModalProps) 
 
   useEffect(() => {
     setTitleDraft(entry.presentationTitle?.trim() || defaultTitle(entry));
-  }, [entry.id, entry.presentationTitle, entry.invoiceNumber, entry.clientName]);
+  }, [entry]);
 
   const saveTitle = useCallback(() => {
     const next = titleDraft.trim();

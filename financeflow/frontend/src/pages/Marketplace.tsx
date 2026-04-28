@@ -1,10 +1,23 @@
-import { Puzzle, CheckCircle2, Download, Search, BookOpen, FileCode2, RefreshCw } from 'lucide-react';
+import {
+  Puzzle,
+  CheckCircle2,
+  Download,
+  Search,
+  BookOpen,
+  FileCode2,
+  RefreshCw,
+  Store,
+  Trash2,
+} from 'lucide-react';
+import axios from 'axios';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFinanceData } from '../context/FinanceDataContext';
 import { PluginEnableSwitch } from '../components/PluginEnableSwitch';
 import AddPluginModal from '../components/AddPluginModal';
 import type { InstalledPlugin } from '../types/plugins';
+import { API_BASE } from '../lib/apiBase';
+import { MARKETPLACE_URL } from '../lib/marketplaceUrl';
 
 type StatusFilter = 'all' | 'installed' | 'not_installed';
 
@@ -41,6 +54,8 @@ export default function Marketplace() {
   const [status, setStatus] = useState<StatusFilter>('all');
   const [addPluginOpen, setAddPluginOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleRefreshPlugins = async () => {
     if (refreshing) return;
@@ -49,6 +64,32 @@ export default function Marketplace() {
       await refresh();
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const handleDeletePlugin = async (id: string, name: string) => {
+    if (deletingId) return;
+    if (
+      !window.confirm(
+        `Remove “${name}” (${id}) from the server’s plugins folder? Restart the API afterward so routes unload.`
+      )
+    ) {
+      return;
+    }
+    setDeleteError(null);
+    setDeletingId(id);
+    try {
+      await axios.delete(`${API_BASE}/dev/plugins/${encodeURIComponent(id)}`);
+      await refresh();
+    } catch (e) {
+      if (axios.isAxiosError(e) && e.response?.data) {
+        const d = e.response.data as { detail?: string };
+        setDeleteError(typeof d.detail === 'string' ? d.detail : 'Could not remove plugin.');
+      } else {
+        setDeleteError('Could not remove plugin. Is the API running?');
+      }
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -72,12 +113,21 @@ export default function Marketplace() {
       <section>
         <h1 className="mb-4 text-3xl md:text-4xl font-medium tracking-tight">Plugin marketplace</h1>
         <p className="text-lg text-ink-black/80 max-w-2xl">
-          Extend Piecemint with specialized modules. Use the switch to enable or disable each plugin
-          for this app. Install by moving a folder into{' '}
-          <code className="text-sm bg-ink-black/5 px-2 py-0.5 rounded-lg">plugins/</code> on the
-          server, then refresh this list.
+          Extend Piecemint with specialized modules. Use the switch to enable or disable each plugin for this app. Install
+          from the public catalog (download a bundle, then <strong>Add your plugin → Upload .zip</strong>), copy a folder
+          into <code className="text-sm bg-ink-black/5 px-2 py-0.5 rounded-lg">plugins/</code> on the server, or use paste
+          install—then refresh this list.
         </p>
         <div className="mt-6 flex flex-col sm:flex-row flex-wrap gap-3">
+          <a
+            href={MARKETPLACE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pill-button-secondary inline-flex items-center justify-center gap-2 no-underline w-full sm:w-auto"
+          >
+            <Store size={18} aria-hidden />
+            Browse marketplace site
+          </a>
           <Link
             to="/docs/plugins"
             className="pill-button-secondary inline-flex items-center justify-center gap-2 no-underline w-full sm:w-auto"
@@ -101,6 +151,12 @@ export default function Marketplace() {
           onClose={() => setAddPluginOpen(false)}
           onInstalled={() => void refresh()}
         />
+      )}
+
+      {deleteError && (
+        <p className="rounded-2xl border border-signal-orange/40 bg-signal-orange/10 px-4 py-3 text-sm text-ink-black">
+          {deleteError}
+        </p>
       )}
 
       {allPlugins.length > 0 && (
@@ -258,18 +314,29 @@ export default function Marketplace() {
                       {p.description}
                     </p>
                     {installedRow ? (
-                      <p className="text-sm font-medium text-ink-black/70">
-                        <span
-                          className={[
-                            'inline-block w-2 h-2 rounded-full mr-2 align-middle',
-                            isPluginEnabled(p.id) ? 'bg-signal-orange' : 'bg-ink-black/25',
-                          ].join(' ')}
-                        />
-                        {isPluginEnabled(p.id) ? 'Enabled in app' : 'Disabled'}
-                      </p>
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium text-ink-black/70">
+                          <span
+                            className={[
+                              'inline-block w-2 h-2 rounded-full mr-2 align-middle',
+                              isPluginEnabled(p.id) ? 'bg-signal-orange' : 'bg-ink-black/25',
+                            ].join(' ')}
+                          />
+                          {isPluginEnabled(p.id) ? 'Enabled in app' : 'Disabled'}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeletePlugin(p.id, p.name)}
+                          disabled={deletingId !== null}
+                          className="inline-flex items-center gap-2 rounded-full border-2 border-ink-black/15 bg-white/80 px-4 py-2 text-sm font-medium text-ink-black/80 transition-colors hover:border-signal-orange hover:text-signal-orange disabled:cursor-wait disabled:opacity-50"
+                        >
+                          <Trash2 size={16} strokeWidth={1.75} aria-hidden />
+                          {deletingId === p.id ? 'Removing…' : 'Remove from server'}
+                        </button>
+                      </div>
                     ) : (
                       <p className="text-sm text-ink-black/50">
-                        Not installed — preference takes effect if you add this module later.
+                        Not installed — download from the marketplace site, then use Add your plugin → Upload .zip.
                       </p>
                     )}
                   </div>

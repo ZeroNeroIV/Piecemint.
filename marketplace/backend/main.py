@@ -1,7 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
+from fastapi.responses import Response
+from typing import List
 from pydantic import BaseModel
+import io
+import zipfile
+from pathlib import Path
 
 app = FastAPI(title="MarketPlace API")
 
@@ -86,6 +90,65 @@ PLUGINS: List[Plugin] = [
         is_free=False
     )
 ]
+
+# Piecemint / FinanceFlow monorepo: plugin folders live next to `marketplace/backend`.
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+
+
+def _plugin_source_dir(plugin_id: str) -> Path | None:
+    base = REPO_ROOT / "financeflow" / "backend"
+    for sub in ("plugins", "disabled_plugins"):
+        d = base / sub / plugin_id
+        if d.is_dir() and (d / "logic.py").exists():
+            return d
+    return None
+
+
+def _stub_files(plugin: Plugin) -> tuple[str, str]:
+    logic = (
+        f'"""Stub "{plugin.name}" — replace with full implementation or copy from the open-source repo."""\n'
+        "from fastapi import APIRouter\n"
+        f'router = APIRouter(tags=["{plugin.id}"])\n\n\n'
+        f'@router.get("/{plugin.id}/health")\n'
+        "def health():\n"
+        f'    return {{"plugin": "{plugin.id}", "status": "ok", "note": "stub from marketplace"}}\n'
+    )
+    desc = plugin.description.replace('"', "'")[:240]
+    manifest = (
+        f'name: "{plugin.name}"\n'
+        f'description: "{desc}"\n'
+        'version: "1.0.0"\n'
+    )
+    return logic, manifest
+
+
+@app.get("/api/plugins/{plugin_id}/download")
+def download_plugin_bundle(plugin_id: str):
+    """Zip bundle for import via Piecemint → Add plugin → Upload .zip (one top-level folder)."""
+    plugin = next((p for p in PLUGINS if p.id == plugin_id), None)
+    if not plugin:
+        raise HTTPException(status_code=404, detail="Unknown plugin id.")
+
+    buf = io.BytesIO()
+    src = _plugin_source_dir(plugin_id)
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        if src is not None:
+            for f in sorted(src.rglob("*")):
+                if f.is_file():
+                    arc = f"{plugin_id}/{f.relative_to(src).as_posix()}"
+                    zf.write(f, arc)
+        else:
+            logic, manifest = _stub_files(plugin)
+            zf.writestr(f"{plugin_id}/logic.py", logic)
+            zf.writestr(f"{plugin_id}/manifest.yaml", manifest)
+
+    data = buf.getvalue()
+    return Response(
+        content=data,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{plugin_id}.ffplugin.zip"'},
+    )
+
 
 @app.get("/api/plugins", response_model=List[Plugin])
 def get_plugins():
