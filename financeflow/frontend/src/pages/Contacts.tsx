@@ -1,17 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Download, Eye } from 'lucide-react';
+import { Download, Eye, Plus } from 'lucide-react';
 import { useFinanceData } from '../context/FinanceDataContext';
 import InvoiceDownloadModal from '../components/InvoiceDownloadModal';
 import ContactEntityShowModal from '../components/ContactEntityShowModal';
+import AddContactEntityModal from '../components/AddContactEntityModal';
 import EntityCategorySelect from '../components/EntityCategorySelect';
 
 type ContactRow = { id: string; name: string; email: string; total_billed: number };
 
 export default function Contacts() {
-  const { clients, suppliers, isPluginActive } = useFinanceData();
+  const { clients, suppliers, isPluginActive, refresh } = useFinanceData();
   const [searchParams, setSearchParams] = useSearchParams();
   const inv = isPluginActive('invoice_gen');
+  const [addOpen, setAddOpen] = useState<null | 'client' | 'supplier'>(null);
   const [invoiceClient, setInvoiceClient] = useState<{
     id: string;
     name: string;
@@ -70,9 +72,20 @@ export default function Contacts() {
 
       <div className="flex flex-col gap-12">
         <section>
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-2 h-2 rounded-full bg-ink-black" />
-            <h2 className="text-sm font-bold tracking-widest uppercase text-ink-black/60">Clients</h2>
+          <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-2 h-2 rounded-full bg-ink-black shrink-0" />
+              <h2 className="text-sm font-bold tracking-widest uppercase text-ink-black/60">Clients</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAddOpen('client')}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-ink-black/15 bg-white text-ink-black hover:bg-canvas-cream transition-colors"
+              aria-label="Add client"
+              title="Add client"
+            >
+              <Plus size={20} strokeWidth={1.75} aria-hidden />
+            </button>
           </div>
           <div className="card overflow-x-auto">
             <table className="w-full text-left min-w-[520px]">
@@ -134,9 +147,20 @@ export default function Contacts() {
         </section>
 
         <section>
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-2 h-2 rounded-full bg-ink-black" />
-            <h2 className="text-sm font-bold tracking-widest uppercase text-ink-black/60">Suppliers</h2>
+          <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-2 h-2 rounded-full bg-ink-black shrink-0" />
+              <h2 className="text-sm font-bold tracking-widest uppercase text-ink-black/60">Suppliers</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAddOpen('supplier')}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-ink-black/15 bg-white text-ink-black hover:bg-canvas-cream transition-colors"
+              aria-label="Add supplier"
+              title="Add supplier"
+            >
+              <Plus size={20} strokeWidth={1.75} aria-hidden />
+            </button>
           </div>
           <div className="card overflow-x-auto">
             <table className="w-full text-left min-w-[520px]">
@@ -185,6 +209,13 @@ export default function Contacts() {
         </section>
       </div>
 
+      {addOpen && (
+        <AddContactEntityModal
+          kind={addOpen}
+          onClose={() => setAddOpen(null)}
+          onCreated={() => void refresh()}
+        />
+      )}
       {invoiceClient && (
         <InvoiceDownloadModal
           key={invoiceClient.id}
