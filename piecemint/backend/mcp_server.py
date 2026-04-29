@@ -67,7 +67,7 @@ def list_tenants() -> str:
     """List all tenant ids and display names in the database."""
     with session_scope() as db:
         rows = db.query(db_models.Tenant).order_by(db_models.Tenant.id).all()
-    data = [{"id": t.id, "name": t.name} for t in rows]
+        data = [{"id": t.id, "name": t.name} for t in rows]
     return json.dumps(data, indent=2)
 
 
