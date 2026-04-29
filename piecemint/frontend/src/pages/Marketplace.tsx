@@ -112,7 +112,7 @@ export default function Marketplace() {
   return (
     <div className="w-full space-y-10">
       <section>
-        <h1 className="mb-4 text-3xl md:text-4xl font-medium tracking-tight">Plugin marketplace</h1>
+        <h1 className="mb-4 text-3xl md:text-4xl font-medium tracking-tight">Plugin Library</h1>
         <p className="text-lg text-ink-black/80 max-w-2xl">
           Extend Piecemint with specialized modules. Use the switch to enable or disable each plugin for this app. Install
           from the public catalog (download a bundle, then <strong>Add your plugin → Upload .zip</strong>), copy a folder

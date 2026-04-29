@@ -34,6 +34,32 @@ import {
   type CategoryRegistryExtra,
 } from '../lib/categoryStorage';
 import { API_BASE as API_URL } from '../lib/apiBase';
+import { loadMockDataMode, saveMockDataMode } from '../lib/mockDataMode';
+
+const DEBUG_MOCK_CLIENTS = [
+  { id: 'client_demo_1', name: 'Stark Industries', email: 'ap@stark.example', total_billed: 133000 },
+  { id: 'client_demo_2', name: 'Nimbus Labs GmbH', email: 'finance@nimbus.example', total_billed: 24000 },
+  { id: 'client_demo_3', name: 'Acme Corp', email: 'billing@acme.example', total_billed: 18500 },
+];
+
+const DEBUG_MOCK_SUPPLIERS = [
+  { id: 'supp_demo_1', name: 'Microsoft Azure', email: 'invoices@azure.example', total_billed: 5200 },
+  { id: 'supp_demo_2', name: 'AWS Cloud', email: 'invoices@aws.example', total_billed: 3400 },
+  { id: 'supp_demo_3', name: 'Cisco Meraki', email: 'billing@meraki.example', total_billed: 2100 },
+];
+
+const DEBUG_MOCK_TRANSACTIONS = [
+  { id: 'tx_demo_1', amount: 12000, date: '2026-04-03', type: 'income', category: 'Consulting', is_recurring: true, last_activity: '2026-04-03' },
+  { id: 'tx_demo_2', amount: -5200, date: '2026-04-07', type: 'expense', category: 'Microsoft Azure', is_recurring: true, last_activity: '2026-02-11' },
+  { id: 'tx_demo_3', amount: -3400, date: '2026-04-11', type: 'expense', category: 'AWS Cloud', is_recurring: true, last_activity: '2026-01-27' },
+  { id: 'tx_demo_4', amount: -2100, date: '2026-04-16', type: 'expense', category: 'Cisco Meraki', is_recurring: true, last_activity: '2026-02-02' },
+  { id: 'tx_demo_5', amount: 6800, date: '2026-04-18', type: 'income', category: 'Product Sale', is_recurring: false, last_activity: '2026-04-18' },
+];
+
+const DEBUG_MOCK_STOCKHOLDERS = [
+  { id: 'sh_demo_1', name: 'Ada Founder', email: 'ada@example.com', share_percent: 62, notes: 'Lead founder' },
+  { id: 'sh_demo_2', name: 'Sam Partner', email: 'sam@example.com', share_percent: 38, notes: 'Operations partner' },
+];
 
 type FinanceDataContextValue = {
   clients: any[];
@@ -44,6 +70,8 @@ type FinanceDataContextValue = {
   pluginToggles: Record<string, boolean>;
   taxReserve: any | null;
   forecast: any[];
+  mockDataEnabled: boolean;
+  setMockDataEnabled: (enabled: boolean) => void;
   refresh: () => Promise<void>;
   isPluginInstalled: (id: string) => boolean;
   isPluginEnabled: (id: string) => boolean;
@@ -91,6 +119,7 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
   );
   const [taxReserve, setTaxReserve] = useState<any | null>(null);
   const [forecast, setForecast] = useState<any[]>([]);
+  const [mockDataEnabled, setMockDataEnabledState] = useState<boolean>(() => loadMockDataMode());
   const [invoiceExportConfig, setInvoiceExportState] = useState<InvoiceExportConfig>(() =>
     loadInvoiceExport()
   );
@@ -107,6 +136,11 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     catAsgRef.current = assignments;
   }, [assignments]);
+
+  const setMockDataEnabled = useCallback((enabled: boolean) => {
+    setMockDataEnabledState(enabled);
+    saveMockDataMode(enabled);
+  }, []);
 
   const setInvoiceExportConfig = useCallback(
     (
@@ -125,6 +159,17 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
+      if (mockDataEnabled) {
+        const pluginsRes = await axios.get(`${API_URL}/plugins`);
+        setClients(DEBUG_MOCK_CLIENTS);
+        setSuppliers(DEBUG_MOCK_SUPPLIERS);
+        setTransactions(DEBUG_MOCK_TRANSACTIONS);
+        setStockholders(DEBUG_MOCK_STOCKHOLDERS);
+        setPlugins(pluginsRes.data);
+        setTaxReserve(null);
+        setForecast([]);
+        return;
+      }
       const [clientsRes, suppliersRes, transRes, stockRes, pluginsRes] = await Promise.all([
         axios.get(`${API_URL}/core/clients`),
         axios.get(`${API_URL}/core/suppliers`),
@@ -156,7 +201,7 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       console.error('FinanceData refresh error:', e);
     }
-  }, [pluginToggles]);
+  }, [pluginToggles, mockDataEnabled]);
 
   useEffect(() => {
     void refresh();
@@ -508,6 +553,8 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
       pluginToggles,
       taxReserve,
       forecast,
+      mockDataEnabled,
+      setMockDataEnabled,
       refresh,
       isPluginInstalled,
       isPluginEnabled,
@@ -537,6 +584,8 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
       pluginToggles,
       taxReserve,
       forecast,
+      mockDataEnabled,
+      setMockDataEnabled,
       refresh,
       isPluginInstalled,
       isPluginEnabled,

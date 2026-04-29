@@ -8,6 +8,7 @@ import {
   Users,
   Wallet2,
   Zap,
+  ShieldCheck,
   Puzzle,
   Plug,
   Store,
@@ -49,6 +50,7 @@ const coreNav: {
   { to: '/budget', label: 'Budget & cash flow', icon: Wallet2, end: false },
   { to: '/contacts', label: 'Clients & suppliers', icon: Users, end: false },
   { to: '/activity', label: 'Transactions & alerts', icon: Zap, end: false },
+  { to: '/financial-settings', label: 'Financial settings', icon: ShieldCheck, end: false },
 ];
 
 function useDelayedTooltip(active: boolean) {
@@ -227,7 +229,7 @@ function SidebarExpandedContent({
 }
 
 export default function AppLayout() {
-  const { plugins, isPluginEnabled } = useFinanceData();
+  const { plugins, isPluginEnabled, mockDataEnabled, setMockDataEnabled } = useFinanceData();
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -324,6 +326,10 @@ export default function AppLayout() {
     ],
     [pluginNav]
   );
+  const showDebugMockToggle = useMemo(() => {
+    const sp = new URLSearchParams(location.search);
+    return sp.get('debug_mode') === 'true';
+  }, [location.search]);
 
   const updateMobileNavFade = useCallback(() => {
     const el = mobileNavRef.current;
@@ -380,6 +386,22 @@ export default function AppLayout() {
             Piecemint<span className="text-signal-orange text-2xl leading-none">.</span>
           </div>
           <div className="flex items-center gap-2 md:gap-3 shrink-0">
+            {showDebugMockToggle && (
+              <button
+                type="button"
+                onClick={() => setMockDataEnabled(!mockDataEnabled)}
+                className={[
+                  'h-11 rounded-full border px-3 text-xs font-medium transition-colors',
+                  mockDataEnabled
+                    ? 'border-signal-orange/40 bg-signal-orange/15 text-ink-black'
+                    : 'border-ink-black/15 bg-white text-ink-black/75',
+                ].join(' ')}
+                aria-label={`Toggle mock data mode. Current: ${mockDataEnabled ? 'on' : 'off'}`}
+                title="Debug mode mock data toggle"
+              >
+                Mock: {mockDataEnabled ? 'On' : 'Off'}
+              </button>
+            )}
             <a
               href={MARKETPLACE_URL}
               target="_blank"

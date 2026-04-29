@@ -5,7 +5,7 @@ import { useFinanceData } from '../context/FinanceDataContext';
 import { buildChartSeries } from '../lib/financeCharts';
 
 export default function Overview() {
-  const { transactions, taxReserve, isPluginActive } = useFinanceData();
+  const { transactions, taxReserve, plugins, isPluginActive, isPluginEnabled } = useFinanceData();
 
   const series = useMemo(() => buildChartSeries(transactions), [transactions]);
   const maxKpi = Math.max(series.totalInflow, series.totalOutflow, 1);
@@ -17,6 +17,9 @@ export default function Overview() {
       : Math.max(...transactions.map((t: { amount: number }) => Math.abs(t.amount)), 1);
 
   const taxPlugin = isPluginActive('tax_calculator') && taxReserve ? taxReserve : null;
+  const installedPlugins = plugins.installed;
+  const enabledCount = installedPlugins.filter((p) => isPluginEnabled(p.id)).length;
+  const disabledCount = Math.max(0, installedPlugins.length - enabledCount);
 
   return (
     <div className="w-full space-y-10">
@@ -154,6 +157,61 @@ export default function Overview() {
             </div>
           </div>
         )}
+      </section>
+
+      <section className="w-full">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-2 h-2 rounded-full bg-ink-black" />
+          <h2 className="text-sm font-bold tracking-widest uppercase text-ink-black/60">
+            Plugin health
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="card p-6 bg-lifted-cream">
+            <p className="text-sm text-ink-black/60 mb-2">Installed plugins</p>
+            <p className="text-3xl font-medium tracking-tight">{installedPlugins.length}</p>
+          </div>
+          <div className="card p-6 bg-lifted-cream">
+            <p className="text-sm text-ink-black/60 mb-2">Enabled</p>
+            <p className="text-3xl font-medium tracking-tight">{enabledCount}</p>
+          </div>
+          <div className="card p-6 bg-lifted-cream">
+            <p className="text-sm text-ink-black/60 mb-2">Disabled</p>
+            <p className="text-3xl font-medium tracking-tight">{disabledCount}</p>
+          </div>
+        </div>
+        <div className="card p-6 mt-6">
+          <h3 className="text-sm font-bold tracking-widest uppercase text-ink-black/60 mb-4">
+            Status overview
+          </h3>
+          {installedPlugins.length === 0 ? (
+            <p className="text-sm text-ink-black/55">No installed plugins detected.</p>
+          ) : (
+            <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {installedPlugins.map((p) => {
+                const enabled = isPluginEnabled(p.id);
+                return (
+                  <li
+                    key={p.id}
+                    className="rounded-2xl border border-ink-black/10 bg-white/70 px-4 py-3 flex items-center justify-between gap-3"
+                  >
+                    <span className="text-sm font-medium text-ink-black/85 truncate">{p.name}</span>
+                    <span
+                      className={[
+                        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium border',
+                        enabled
+                          ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                          : 'border-ink-black/15 bg-ink-black/5 text-ink-black/60',
+                      ].join(' ')}
+                    >
+                      {enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </section>
     </div>
   );

@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Download, Eye, Plus } from 'lucide-react';
+import { Download, Eye, Plus, Trash2 } from 'lucide-react';
+import axios from 'axios';
 import { useFinanceData } from '../context/FinanceDataContext';
 import InvoiceDownloadModal from '../components/InvoiceDownloadModal';
 import ContactEntityShowModal from '../components/ContactEntityShowModal';
 import AddContactEntityModal from '../components/AddContactEntityModal';
 import EntityCategorySelect from '../components/EntityCategorySelect';
+import { API_BASE } from '../lib/apiBase';
 
 type ContactRow = { id: string; name: string; email: string; total_billed: number };
 
@@ -20,6 +22,7 @@ export default function Contacts() {
   } | null>(null);
   const [showClient, setShowClient] = useState<ContactRow | null>(null);
   const [showSupplier, setShowSupplier] = useState<ContactRow | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const clearEntityQuery = useCallback(() => {
     setSearchParams(
@@ -57,6 +60,33 @@ export default function Contacts() {
     }
   }, [searchParams, clients, suppliers]);
 
+  const handleDelete = useCallback(
+    async (kind: 'client' | 'supplier', row: ContactRow) => {
+      const label = kind === 'client' ? 'client' : 'supplier';
+      if (!window.confirm(`Delete ${label} "${row.name}"? This cannot be undone.`)) return;
+      setDeleteError(null);
+      try {
+        await axios.delete(
+          kind === 'client'
+            ? `${API_BASE}/core/clients/${encodeURIComponent(row.id)}`
+            : `${API_BASE}/core/suppliers/${encodeURIComponent(row.id)}`
+        );
+        if (kind === 'client' && showClient?.id === row.id) setShowClient(null);
+        if (kind === 'supplier' && showSupplier?.id === row.id) setShowSupplier(null);
+        if (searchParams.get(kind) === row.id) clearEntityQuery();
+        await refresh();
+      } catch (e: unknown) {
+        if (axios.isAxiosError(e)) {
+          const detail = (e.response?.data as { detail?: unknown } | undefined)?.detail;
+          setDeleteError(typeof detail === 'string' ? detail : `Could not delete ${label}.`);
+        } else {
+          setDeleteError(`Could not delete ${label}.`);
+        }
+      }
+    },
+    [refresh, showClient, showSupplier, searchParams, clearEntityQuery]
+  );
+
   return (
     <div className="w-full space-y-10">
       <header>
@@ -87,6 +117,11 @@ export default function Contacts() {
               <Plus size={20} strokeWidth={1.75} aria-hidden />
             </button>
           </div>
+          {deleteError && (
+            <p className="mb-4 rounded-2xl border border-signal-orange/40 bg-signal-orange/10 px-4 py-3 text-sm text-ink-black">
+              {deleteError}
+            </p>
+          )}
           <div className="card overflow-x-auto">
             <table className="w-full text-left min-w-[520px]">
               <thead>
@@ -95,6 +130,7 @@ export default function Contacts() {
                   <th className="pb-4 font-medium">Category</th>
                   <th className="pb-4 font-medium">Total billed</th>
                   <th className="pb-4 font-medium text-right w-[100px]">Show</th>
+                  <th className="pb-4 font-medium text-right w-[100px]">Delete</th>
                   {inv && <th className="pb-4 font-medium text-right">Invoice</th>}
                 </tr>
               </thead>
@@ -120,6 +156,18 @@ export default function Contacts() {
                         Show
                       </button>
                     </td>
+                    <td className="py-4 text-right align-top">
+                      <button
+                        type="button"
+                        onClick={() => void handleDelete('client', c)}
+                        className="inline-flex items-center justify-center gap-1 rounded-full border border-ink-black/20 px-3 py-1.5 text-xs font-medium hover:bg-ink-black hover:text-canvas-cream transition-colors"
+                        title={`Delete ${c.name}`}
+                        aria-label={`Delete client ${c.name}`}
+                      >
+                        <Trash2 size={14} />
+                        Delete
+                      </button>
+                    </td>
                     {inv && (
                       <td className="py-4 text-right align-top">
                         <button
@@ -136,7 +184,7 @@ export default function Contacts() {
                 ))}
                 {clients.length === 0 && (
                   <tr>
-                    <td colSpan={inv ? 5 : 4} className="py-8 text-center text-ink-black/60">
+                    <td colSpan={inv ? 6 : 5} className="py-8 text-center text-ink-black/60">
                       No clients found.
                     </td>
                   </tr>
@@ -170,6 +218,7 @@ export default function Contacts() {
                   <th className="pb-4 font-medium">Category</th>
                   <th className="pb-4 font-medium">Total billed</th>
                   <th className="pb-4 font-medium text-right w-[100px]">Show</th>
+                  <th className="pb-4 font-medium text-right w-[100px]">Delete</th>
                 </tr>
               </thead>
               <tbody>
@@ -194,11 +243,23 @@ export default function Contacts() {
                         Show
                       </button>
                     </td>
+                    <td className="py-4 text-right align-top">
+                      <button
+                        type="button"
+                        onClick={() => void handleDelete('supplier', s)}
+                        className="inline-flex items-center justify-center gap-1 rounded-full border border-ink-black/20 px-3 py-1.5 text-xs font-medium hover:bg-ink-black hover:text-canvas-cream transition-colors"
+                        title={`Delete ${s.name}`}
+                        aria-label={`Delete supplier ${s.name}`}
+                      >
+                        <Trash2 size={14} />
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {suppliers.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="py-8 text-center text-ink-black/60">
+                    <td colSpan={5} className="py-8 text-center text-ink-black/60">
                       No suppliers found.
                     </td>
                   </tr>

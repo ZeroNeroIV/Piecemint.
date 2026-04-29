@@ -217,3 +217,26 @@ def delete_stockholder(
         raise HTTPException(404, "Stockholder not found for this tenant")
     db.delete(s)
     db.commit()
+
+
+@router.put("/stockholders/{stockholder_id}", response_model=Stockholder)
+def update_stockholder(
+    db: DbSession, tenant_id: TenantId, stockholder_id: str, body: StockholderCreate
+) -> Stockholder:
+    s = (
+        db.query(db_models.Stockholder)
+        .filter(
+            db_models.Stockholder.id == stockholder_id,
+            db_models.Stockholder.tenant_id == tenant_id,
+        )
+        .first()
+    )
+    if not s:
+        raise HTTPException(404, "Stockholder not found for this tenant")
+    s.name = body.name
+    s.email = body.email
+    s.share_percent = body.share_percent
+    s.notes = body.notes
+    db.commit()
+    db.refresh(s)
+    return _sh_out(s)

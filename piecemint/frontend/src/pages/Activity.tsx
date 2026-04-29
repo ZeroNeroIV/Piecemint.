@@ -26,6 +26,13 @@ export default function Activity() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [txPage, setTxPage] = useState(1);
   const [showTransaction, setShowTransaction] = useState<TransactionRecord | null>(null);
+  const [reviewSubscription, setReviewSubscription] = useState<{
+    id: string;
+    category: string;
+    amount: number;
+    last_activity: string;
+  } | null>(null);
+  const [dismissedZombieIds, setDismissedZombieIds] = useState<string[]>([]);
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -33,6 +40,18 @@ export default function Activity() {
     (t: { is_recurring: boolean; last_activity: string }) =>
       t.is_recurring && new Date(t.last_activity) < thirtyDaysAgo
   );
+  const reviewableZombies = zombies.filter(
+    (z: { id: string }) => !dismissedZombieIds.includes(z.id)
+  );
+
+  useEffect(() => {
+    if (!reviewSubscription) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setReviewSubscription(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [reviewSubscription]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,7 +189,7 @@ export default function Activity() {
         )}
       </section>
 
-      {zombies.length > 0 && (
+      {reviewableZombies.length > 0 && (
         <section>
           <div className="flex items-center gap-2 mb-6">
             <div className="w-2 h-2 rounded-full bg-signal-orange" />
@@ -182,7 +201,7 @@ export default function Activity() {
             Recurring charges with no activity in the last 30 days.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {zombies.map(
+            {reviewableZombies.map(
               (z: { id: string; category: string; amount: number; last_activity: string }) => (
                 <div key={z.id} className="card border border-signal-orange/20">
                   <div className="flex justify-between items-start mb-3">
@@ -191,7 +210,12 @@ export default function Activity() {
                   </div>
                   <p className="text-2xl font-medium mb-2">${Math.abs(z.amount)}</p>
                   <p className="text-sm text-ink-black/60 mb-4">Last activity: {z.last_activity}</p>
-                  <button type="button" className="consent-button w-full">
+                  <button
+                    type="button"
+                    className="consent-button w-full"
+                    onClick={() => setReviewSubscription(z)}
+                    aria-label={`Review subscription ${z.category}`}
+                  >
                     Review subscription
                   </button>
                 </div>
@@ -286,6 +310,70 @@ export default function Activity() {
           transaction={showTransaction}
           onClose={() => setShowTransaction(null)}
         />
+      )}
+      {reviewSubscription && (
+        <div
+          className="fixed inset-0 z-[70] bg-ink-black/35 flex items-center justify-center p-4"
+          role="presentation"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setReviewSubscription(null);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="review-subscription-title"
+            className="w-full max-w-lg rounded-[2rem] border border-ink-black/10 bg-lifted-cream p-6 shadow-[0px_24px_48px_rgba(0,0,0,0.08)]"
+          >
+            <h3 id="review-subscription-title" className="text-xl font-medium tracking-tight">
+              Review subscription
+            </h3>
+            <p className="mt-2 text-sm text-ink-black/60">
+              Decide whether to keep this recurring charge or unsubscribe.
+            </p>
+            <dl className="mt-5 space-y-3 text-sm">
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink-black/55">Name</dt>
+                <dd className="font-medium text-right">{reviewSubscription.category}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink-black/55">Amount</dt>
+                <dd className="font-medium text-right">
+                  ${Math.abs(reviewSubscription.amount).toLocaleString()}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink-black/55">Last activity</dt>
+                <dd className="font-medium text-right">{reviewSubscription.last_activity}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink-black/55">Transaction id</dt>
+                <dd className="font-medium text-right break-all">{reviewSubscription.id}</dd>
+              </div>
+            </dl>
+            <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+              <button
+                type="button"
+                className="inline-flex items-center justify-center rounded-full border border-ink-black/20 px-4 py-2 text-sm font-medium text-ink-black hover:bg-ink-black hover:text-canvas-cream transition-colors"
+                onClick={() => setReviewSubscription(null)}
+              >
+                Keep subscription
+              </button>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center rounded-full border border-signal-orange/35 bg-signal-orange/10 px-4 py-2 text-sm font-medium text-ink-black hover:bg-signal-orange hover:text-canvas-cream transition-colors"
+                onClick={() => {
+                  setDismissedZombieIds((prev) =>
+                    prev.includes(reviewSubscription.id) ? prev : [...prev, reviewSubscription.id]
+                  );
+                  setReviewSubscription(null);
+                }}
+              >
+                Unsubscribe
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
