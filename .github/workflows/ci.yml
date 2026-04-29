@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        product: [financeflow, marketplace]
+        product: [piecemint, marketplace]
 
     steps:
       - uses: actions/checkout@v4
@@ -51,26 +51,38 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - product: financeflow
-            workdir: financeflow/backend
-            install: pip install -r requirements.txt
-            verify: PYTHONPATH=. python -c "from api.main import app; assert app.title == 'Piecemint API'"
+          - product: piecemint
+            workdir: piecemint/backend
+            python-version: "3.14"
           - product: marketplace
             workdir: marketplace/backend
-            install: pip install "fastapi>=0.115" "uvicorn[standard]>=0.32" "pydantic>=2"
-            verify: python -c "import main; assert main.app.title == 'MarketPlace API'"
+            python-version: "3.13"
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: Install dependencies (piecemint / Pipenv)
+        if: matrix.product == 'piecemint'
         working-directory: ${{ matrix.workdir }}
-        run: ${{ matrix.install }}
+        run: |
+          pip install pipenv
+          pipenv install --deploy
 
-      - name: Smoke import
+      - name: Smoke import (piecemint)
+        if: matrix.product == 'piecemint'
         working-directory: ${{ matrix.workdir }}
-        run: ${{ matrix.verify }}
+        run: pipenv run python -c "from api.main import app; assert app.title == 'Piecemint API'"
+
+      - name: Install dependencies (marketplace)
+        if: matrix.product == 'marketplace'
+        working-directory: ${{ matrix.workdir }}
+        run: pip install "fastapi>=0.115" "uvicorn[standard]>=0.32" "pydantic>=2"
+
+      - name: Smoke import (marketplace)
+        if: matrix.product == 'marketplace'
+        working-directory: ${{ matrix.workdir }}
+        run: python -c "import main; assert main.app.title == 'MarketPlace API'"

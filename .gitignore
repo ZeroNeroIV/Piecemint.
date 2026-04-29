@@ -1,10 +1,11 @@
-# Python
+# Python / Pipenv
 __pycache__/
 *.py[cod]
 *.egg-info/
 .eggs/
 *.so
-piecemint/backend/venv/
+.venv/
+venv/
 
 # Node / frontend
 node_modules/

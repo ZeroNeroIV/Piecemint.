@@ -1,0 +1,4 @@
+name: "Web notifications"
+description: "Browser push-style alerts: request permission, send a test notification, and keep preferences per tenant in this app."
+version: "1.0.0"
+icon: "icon.svg"

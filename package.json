@@ -1,0 +1,36 @@
+{
+  "name": "piecemint",
+  "version": "1.0.0",
+  "description": "Your all-in-one finance tool.",
+  "main": "index.js",
+  "scripts": {
+    "// --- Marketplace ---": "",
+    "marketplace-fe": "npm run dev --prefix marketplace/frontend",
+    "marketplace-fe:build": "npm run build --prefix marketplace/frontend",
+    "marketplace-fe:lint": "npm run lint --prefix marketplace/frontend",
+    "marketplace-be": "cd marketplace/backend && pipenv run python -m uvicorn main:app --reload --port 8001",
+    "// --- Piecemint ---": "",
+    "piecemint-fe": "npm run dev --prefix piecemint/frontend",
+    "piecemint-fe:build": "npm run build --prefix piecemint/frontend",
+    "piecemint-fe:lint": "npm run lint --prefix piecemint/frontend",
+    "piecemint-be": "cd piecemint/backend && pipenv run python -m uvicorn api.main:app --reload --port 8000",
+    "// --- Monorepo ---": "",
+    "install:all": "npm install && npm install --prefix marketplace/frontend && npm install --prefix piecemint/frontend",
+    "build": "npm run piecemint-fe:build && npm run marketplace-fe:build",
+    "lint": "npm run piecemint-fe:lint && npm run marketplace-fe:lint",
+    "dev": "concurrently -n \"MARKET-FE,MARKET-BE,PIECE-FE,PIECE-BE\" -c \"cyan,blue,yellow,magenta\" \"npm run marketplace-fe\" \"npm run marketplace-be\" \"npm run piecemint-fe\" \"npm run piecemint-be\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZeroNeroIV/salamhack-prototype2.git"
+  },
+  "author": "Alameen Sabbah (ZeroNeroIV)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ZeroNeroIV/salamhack-prototype2/issues"
+  },
+  "homepage": "https://github.com/ZeroNeroIV/salamhack-prototype2#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

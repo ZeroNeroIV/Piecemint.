@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
 import {
   Search,
-  BrainCircuit,
   FileText,
   PieChart,
   Calculator,
@@ -16,7 +15,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react'
 import ForDevelopers from './ForDevelopers'
-import { marketplaceApiPath, MAIN_APP_URL } from './lib/urls'
+import { marketplaceApiPath, MAIN_APP_URL, marketplacePluginIconUrl } from './lib/urls'
 
 interface Plugin {
   id: string;
@@ -24,10 +23,38 @@ interface Plugin {
   description: string;
   price: string;
   is_free: boolean;
+  has_icon: boolean;
+}
+
+function PluginCatalogGlyph({
+  plugin,
+  pluginIcons,
+}: {
+  plugin: Plugin;
+  pluginIcons: Record<string, React.ElementType>;
+}) {
+  const [broken, setBroken] = useState(false);
+  const Icon = pluginIcons[plugin.id] || Puzzle;
+  if (plugin.has_icon && !broken) {
+    return (
+      <img
+        src={marketplacePluginIconUrl(plugin.id)}
+        alt=""
+        className="w-16 h-16 mb-4 object-contain rounded-2xl shrink-0 ring-1 ring-ink-black/10 bg-white/50"
+        onError={() => setBroken(true)}
+      />
+    );
+  }
+  return (
+    <Icon
+      className="w-16 h-16 mb-4 text-ink-black/40 group-hover:text-[var(--color-signal-orange)] transition-colors duration-500"
+      strokeWidth={1.5}
+      aria-hidden
+    />
+  );
 }
 
 const pluginIcons: Record<string, React.ElementType> = {
-  mcp: BrainCircuit,
   invoice_gen: FileText,
   expense_categorizer: PieChart,
   tax_calculator: Calculator,
@@ -35,7 +62,7 @@ const pluginIcons: Record<string, React.ElementType> = {
   stockholders: Users,
   ai_prediction: TrendingUp,
   email_notifications: Mail,
-  web_notifications: Bell
+  web_notifications: Bell,
 };
 
 function App() {
@@ -290,13 +317,12 @@ function App() {
               <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-[var(--color-light-orange)]/30 -z-10 rounded-[100%] scale-[2] transform -translate-y-1/2 pointer-events-none hidden lg:block"></div>
 
               {filtered.map((plugin) => {
-                const Icon = pluginIcons[plugin.id] || Puzzle;
                 return (
                   <div key={plugin.id} className="flex flex-col items-center">
                     {/* Circular portrait card */}
                     <div className="relative mb-6 group">
                       <div className="w-[260px] h-[260px] rounded-full bg-lifted-cream border border-ink-black/5 shadow-[0px_24px_48px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center p-8 text-center transition-transform duration-500 group-hover:scale-105 bg-white">
-                        <Icon className="w-16 h-16 mb-4 text-ink-black/40 group-hover:text-[var(--color-signal-orange)] transition-colors duration-500" strokeWidth={1.5} />
+                        <PluginCatalogGlyph plugin={plugin} pluginIcons={pluginIcons} />
                         <h3 className="text-[24px] leading-[1.2]">{plugin.name}</h3>
                       </div>
                       

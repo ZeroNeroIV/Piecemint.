@@ -1,0 +1,4 @@
+name: "Invoice Generator"
+description: "Client invoices as PDF, Excel, or Word with configurable branding."
+version: "1.1.0"
+icon: "icon.svg"

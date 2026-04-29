@@ -14,7 +14,14 @@ export default function ForDevelopers() {
             <h1 className="text-[48px] leading-none tracking-tight mb-4">Build your own plugin</h1>
             <p className="text-ink-black/70 text-lg">
               How Piecemint discovers modules under <code className="text-sm bg-ink-black/5 px-1.5 py-0.5 rounded">plugins/</code> and
-              exposes them in the app.
+              exposes them in the app. Add an optional <code className="text-xs bg-ink-black/5 px-1 rounded">icon:</code> field in{' '}
+              <code className="text-xs">manifest.yaml</code> pointing to an image in the plugin folder (e.g.{' '}
+              <code className="text-xs">icon.svg</code>) — it appears in the Piecemint sidebar, plugin library, search, and on this
+              marketplace. Plugin cards and <strong>Download for Piecemint</strong> zips mirror the same folders under{' '}
+              <code className="text-sm bg-ink-black/5 px-1.5 py-0.5 rounded">piecemint/backend/plugins/</code> and{' '}
+              <code className="text-sm bg-ink-black/5 px-1.5 py-0.5 rounded">disabled_plugins/</code> (not stubs). Optional{' '}
+              <code className="text-xs bg-ink-black/5 px-1 rounded">marketplace:</code> block in <code className="text-xs">manifest.yaml</code> can
+              set display-only <code className="text-xs">price</code> / <code className="text-xs">is_free</code>.
             </p>
           </div>
         </div>
@@ -44,7 +51,8 @@ export default function ForDevelopers() {
         <ul className="list-disc pl-6 space-y-2 text-ink-black/80">
           <li>
             <strong>manifest.yaml</strong> — metadata: <code className="text-xs">name</code>,{' '}
-            <code className="text-xs">description</code>, <code className="text-xs">version</code>.
+            <code className="text-xs">description</code>, <code className="text-xs">version</code>; optional <code className="text-xs">icon</code> for a
+            logo file in this folder (svg, png, webp, jpeg, gif, or ico).
           </li>
           <li>
             <strong>logic.py</strong> — Python module that defines a FastAPI{' '}
@@ -58,7 +66,8 @@ export default function ForDevelopers() {
         <pre className="text-sm bg-ink-black/5 p-4 rounded-[20px] overflow-x-auto border border-ink-black/10">
 {`name: "My Plugin"
 description: "What it does in one line."
-version: "1.0.0"`}
+version: "1.0.0"
+icon: "icon.svg"   # optional; path under this folder`}
         </pre>
       </section>
 

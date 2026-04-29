@@ -22,7 +22,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
             "Creates the `FastAPI` app, registers CORS, runs **lifespan**: `init_db()` + `ensure_seed_data()` on startup.",
             "Loads **PluginManager**: discovers `plugins/*/`, registers each plugin router under `/api/plugins`.",
             "Mounts **core_router** (`/api/core/*`) and defines `GET /` and `GET /api/plugins` (installed vs available plugin metadata).",
-            "Run with: `uvicorn api.main:app` from `piecemint/backend`.",
+            "Run with: `pipenv run python -m uvicorn api.main:app` from `piecemint/backend` (after `pipenv install`).",
         ],
     ),
     "backend/api/core_routes.py": (
@@ -107,14 +107,22 @@ SPECS: dict[str, tuple[str, list[str]]] = {
             "Uses **`mcp.server.fastmcp.FastMCP`** with **`mcp.run()`** (stdio transport) for Cursor/Claude Desktop style hosts.",
             "Shares the same SQLite file as the FastAPI app via **`api.database`**.",
             "Tools: **`list_tenants`**, **`get_clients`**, **`get_stockholders`**, **`add_stockholder`**, **`list_transactions`**—resolve tenant by id or name.",
-            "Entry: `python mcp_server.py` from `piecemint/backend` (with venv activated).",
+            "Entry: `pipenv run python mcp_server.py` from `piecemint/backend`.",
         ],
     ),
-    "backend/requirements.txt": (
-        "Python dependencies (backend)",
+    "backend/Pipfile": (
+        "Python dependencies (Pipenv)",
         [
-            "Pinned/minimum versions for: FastAPI, Uvicorn, Pydantic, PyYAML, ReportLab, Pandas, SQLAlchemy, MCP, HTTPX, etc.",
-            "Install: `pip install -r requirements.txt` inside the backend virtual environment.",
+            "Declares FastAPI, Uvicorn (standard extras), Pydantic, PyYAML, ReportLab, Pandas, SQLAlchemy, MCP, HTTPX, google-genai, etc.",
+            "Setup: `pip install pipenv` then from `piecemint/backend` run `pipenv install` (uses **`Pipfile.lock`** for reproducible installs).",
+            "Run API: `pipenv run python -m uvicorn api.main:app --reload`.",
+        ],
+    ),
+    "backend/Pipfile.lock": (
+        "Pipenv lockfile",
+        [
+            "Resolved dependency graph; use **`pipenv install --deploy`** in CI for reproducible installs.",
+            "**Do not hand-edit**; regenerate with **`pipenv lock`** after changing the Pipfile.",
         ],
     ),
     "backend/plugins/tax_calculator/logic.py": (
@@ -167,6 +175,103 @@ SPECS: dict[str, tuple[str, list[str]]] = {
         "Plugin: AI prediction (manifest, disabled copy)",
         [
             "Metadata used when the folder is under `plugins/` or when documenting available vs installed in `disabled_plugins/`.",
+        ],
+    ),
+    "backend/api/dev_routes.py": (
+        "Development-only routes (plugin install)",
+        [
+            "**`/api/dev/plugins/install`** and **`install_zip`**: write plugin folders under **`plugins/<id>/`** from pasted Python or a marketplace-style zip.",
+            "Guarded by env (e.g. upload disable flags); restart API to load new plugin routers.",
+        ],
+    ),
+    "backend/api/smtp_outbound.py": (
+        "Outbound SMTP helper",
+        [
+            "Sends mail using host/port/user/password TLS settings; used by invoice-by-email and email-notification flows.",
+        ],
+    ),
+    "backend/api/tenant_scope.py": (
+        "Tenant scoping helpers",
+        [
+            "Shared utilities for resolving tenant context on ORM queries and write paths.",
+        ],
+    ),
+    "backend/api/mock_finance_data.py": (
+        "Demo seed data factories",
+        [
+            "**`all_seed_rows()`** yields SQLAlchemy model instances for **`api.seed`** (tenants, clients, suppliers, transactions, stockholders).",
+        ],
+    ),
+    "backend/plugins/email_notifications/logic.py": (
+        "Plugin: email notifications (API)",
+        [
+            "Persists per-tenant SMTP settings and exposes endpoints under **`/api/plugins/email_notifications/...`**.",
+        ],
+    ),
+    "backend/plugins/email_notifications/manifest.yaml": (
+        "Plugin: email notifications (manifest)",
+        [
+            "Plugin id and metadata for marketplace and plugin manager discovery.",
+        ],
+    ),
+    "backend/plugins/stockholders/logic.py": (
+        "Plugin: stockholders (API)",
+        [
+            "CRUD-style routes for cap table / stockholder rows scoped to the tenant.",
+        ],
+    ),
+    "backend/plugins/stockholders/manifest.yaml": (
+        "Plugin: stockholders (manifest)",
+        [
+            "Metadata for the Stockholders plugin.",
+        ],
+    ),
+    "backend/plugins/small_business/logic.py": (
+        "Plugin: small business suite (API)",
+        [
+            "Serves checklist / suite content for the Small business plugin page.",
+        ],
+    ),
+    "backend/plugins/small_business/manifest.yaml": (
+        "Plugin: small business (manifest)",
+        [
+            "Metadata for the Small business plugin.",
+        ],
+    ),
+    "backend/plugins/web_notifications/logic.py": (
+        "Plugin: web notifications (API)",
+        [
+            "Browser notification permission / placeholder endpoints for future Web Push wiring.",
+        ],
+    ),
+    "backend/plugins/web_notifications/manifest.yaml": (
+        "Plugin: web notifications (manifest)",
+        [
+            "Metadata for the Web notifications plugin.",
+        ],
+    ),
+    "backend/plugins/invoice_gen/builders.py": (
+        "Invoice export builders (xlsx / docx)",
+        [
+            "Builds non-PDF exports from invoice document payloads where supported.",
+        ],
+    ),
+    "backend/plugins/invoice_gen/schemas.py": (
+        "Invoice plugin Pydantic models",
+        [
+            "Structured bodies for generate/email endpoints and document validation.",
+        ],
+    ),
+    "backend/plugins/invoice_gen/invoice_document_render.py": (
+        "Invoice layout / rendering helpers",
+        [
+            "Shared rendering helpers for PDF or structured invoice output (ReportLab, fields, numbering).",
+        ],
+    ),
+    "backend/.env.example": (
+        "Environment template (backend)",
+        [
+            "Documents **GOOGLE_API_KEY**, **GEMINI_MODEL**, and optional SMTP-related **`FF_SMTP_*`** vars; copy to **`.env`** locally.",
         ],
     ),
     "frontend/index.html": (
@@ -257,25 +362,319 @@ SPECS: dict[str, tuple[str, list[str]]] = {
         ],
     ),
     "frontend/src/App.tsx": (
-        "Root React component: shell and routes",
+        "Root React component: router and data provider",
         [
-            "Wraps the app in **`BrowserRouter`**, provides floating **nav pill** with tenant dropdown and links to **Dashboard** and **Plugins (Marketplace)**.",
-            "Passes **`tenantId`** to routed pages; API calls in children should send **`X-Tenant-ID`** to match the backend.",
+            "Wraps the app in **`BrowserRouter`**, **`FinanceDataProvider`**, and **`Routes`** with **`AppLayout`** as the parent route.",
+            "Routes: **`/`** Overview, **`/analytics`**, **`/contacts`**, **`/activity`**, **`/budget`**, **`/marketplace`**, **`/docs/plugins`**, **`/plugin/:pluginId`**.",
         ],
     ),
-    "frontend/src/pages/Dashboard.tsx": (
-        "Main dashboard page",
+    "frontend/src/pages/Overview.tsx": (
+        "Overview dashboard page",
         [
-            "Fetches core data (`/api/core/*`) and plugin status (`/api/plugins`), then optional plugin calls (tax, forecast, expenses, PDF invoice).",
-            "Implements **KPIs**, Recharts **area/bar** charts (cashflow, inflow vs outflow, category, clients, suppliers), **zombie subscription** cards, and CRM tables.",
-            "Uses `http://localhost:8000/api` as base URL unless changed for deployment.",
+            "Landing KPIs and charts using **`useFinanceData`**; links into analytics and activity.",
+            "Sends **`X-Tenant-ID`** on API calls via shared axios/config patterns in context.",
+        ],
+    ),
+    "frontend/src/pages/Analytics.tsx": (
+        "Cash & analytics page",
+        [
+            "Deeper charts and breakdowns (Recharts) over transactions and entity totals.",
+        ],
+    ),
+    "frontend/src/pages/Contacts.tsx": (
+        "Clients & suppliers directory",
+        [
+            "Tables with **`EntityCategorySelect`**; **`+`** opens **`AddContactEntityModal`** posting to **`/api/core/clients`** or **`suppliers`**.",
+            "Optional invoice download when Invoice Generator plugin is active.",
+        ],
+    ),
+    "frontend/src/pages/Activity.tsx": (
+        "Transactions & alerts page",
+        [
+            "Transaction list, paging, recurring “zombie” hints, plugin-gated expense search.",
+        ],
+    ),
+    "frontend/src/pages/BudgetCashFlow.tsx": (
+        "Budget & cash flow page",
+        [
+            "Budget model in local storage + monthly ledger one-time entries; category mix and scheduled bills UI.",
         ],
     ),
     "frontend/src/pages/Marketplace.tsx": (
-        "Plugin marketplace page",
+        "Plugin library page",
         [
-            "Calls **`GET /api/plugins`** to show installed vs available plugins (filesystem-driven lists from the backend).",
-            "No tenant header required for the plugin list endpoint.",
+            "**`GET /api/plugins`** for installed vs available; enable toggles, delete dev plugins, **`AddPluginModal`** zip/paste install to **`/api/dev/...`**.",
+        ],
+    ),
+    "frontend/src/pages/PluginDocsPage.tsx": (
+        "In-app plugin documentation",
+        [
+            "Static/developer-oriented copy for how plugins integrate with Piecemint.",
+        ],
+    ),
+    "frontend/src/pages/PluginPage.tsx": (
+        "Per-plugin dashboard",
+        [
+            "Dynamic route **`/plugin/:pluginId`**: settings panels (invoice, tax, email, stockholders, etc.) when plugin is installed.",
+        ],
+    ),
+    "frontend/src/context/FinanceDataContext.tsx": (
+        "Global finance + plugin state",
+        [
+            "Loads **clients, suppliers, transactions, stockholders, plugins** from **`/api/core/*`** and **`/api/plugins`**; **`refresh()`** re-fetches.",
+            "Category registry/taxonomy, invoice export config, smart categorization, invoice download/email helpers.",
+        ],
+    ),
+    "frontend/src/components/AppLayout.tsx": (
+        "App chrome: header, sidebar, search",
+        [
+            "Floating Piecemint header, collapsible sidebar rail, mobile nav; **`GlobalSearchModal`** (⌘K).",
+        ],
+    ),
+    "frontend/src/components/AddContactEntityModal.tsx": (
+        "Create client or supplier modal",
+        [
+            "Portaled dialog; POST **`/api/core/clients`** or **`suppliers`**, then **`refresh()`**.",
+        ],
+    ),
+    "frontend/src/components/AddPluginModal.tsx": (
+        "Install plugin from zip or paste",
+        [
+            "Full-screen flow portaled to **`#ff-overlay-root`**; calls dev install endpoints.",
+        ],
+    ),
+    "frontend/src/components/ContactEntityShowModal.tsx": (
+        "Read-only contact detail modal",
+        [
+            "Shows id, name, email, total billed for a client or supplier row.",
+        ],
+    ),
+    "frontend/src/components/DynamicTaxFieldsForm.tsx": (
+        "Dynamic tax field inputs",
+        [
+            "Renders jurisdiction-specific inputs driven by tax residency config.",
+        ],
+    ),
+    "frontend/src/components/EmailNotificationsPanel.tsx": (
+        "Email notifications plugin UI",
+        [
+            "SMTP settings and test send against **`email_notifications`** API routes.",
+        ],
+    ),
+    "frontend/src/components/EntityCategorySelect.tsx": (
+        "Category picker for an entity",
+        [
+            "Client/supplier/transaction/stockholder kinds; reads/writes **`categoryStorage`** assignments.",
+        ],
+    ),
+    "frontend/src/components/GlobalSearchModal.tsx": (
+        "Global ⌘K search modal",
+        [
+            "Shortcut-driven modal for jumping to routes or records; high z-index shell.",
+        ],
+    ),
+    "frontend/src/components/InvoiceDocumentForm.tsx": (
+        "Invoice document editor (line items, customer block)",
+        [
+            "Form sections bound to **`InvoiceDocument`** shape used in export settings.",
+        ],
+    ),
+    "frontend/src/components/InvoiceDownloadModal.tsx": (
+        "Invoice download / email modal",
+        [
+            "Chooses format, edits **`InvoiceExportConfig`**, triggers blob download or email POST.",
+        ],
+    ),
+    "frontend/src/components/InvoiceExportForm.tsx": (
+        "Invoice export options form",
+        [
+            "Output format and document fields shared with download flow.",
+        ],
+    ),
+    "frontend/src/components/InvoiceExportSettings.tsx": (
+        "Invoice settings section on plugin page",
+        [
+            "Wraps export form + persistence for invoice generator defaults.",
+        ],
+    ),
+    "frontend/src/components/InvoiceHistorySection.tsx": (
+        "Issued invoice history table",
+        [
+            "Reads/writes **`invoiceHistoryStorage`**; titles and list UX.",
+        ],
+    ),
+    "frontend/src/components/PluginEnableSwitch.tsx": (
+        "Plugin on/off toggle",
+        [
+            "Reflects **`pluginToggles`** in local storage vs installed plugins.",
+        ],
+    ),
+    "frontend/src/components/SearchableCountrySelect.tsx": (
+        "Country combobox",
+        [
+            "Searchable select for invoice/tax country fields.",
+        ],
+    ),
+    "frontend/src/components/SmallBusinessPanel.tsx": (
+        "Small business plugin panel",
+        [
+            "Displays suite data from **`smallBusinessSuite`** and plugin API.",
+        ],
+    ),
+    "frontend/src/components/SmartCategorizeToolbar.tsx": (
+        "Smart categorization actions",
+        [
+            "Triggers **`runSmartCategorize`** via expense_categorizer plugin.",
+        ],
+    ),
+    "frontend/src/components/StockholdersPanel.tsx": (
+        "Stockholders plugin panel",
+        [
+            "Lists equity holders; uses stockholders core/plugin data.",
+        ],
+    ),
+    "frontend/src/components/TaxCalculatorResidencyPanel.tsx": (
+        "Tax calculator residency UI",
+        [
+            "Persists residency choice affecting tax plugin behavior.",
+        ],
+    ),
+    "frontend/src/components/TaxResidencySection.tsx": (
+        "Tax residency section wrapper",
+        [
+            "Groups residency controls in settings flows.",
+        ],
+    ),
+    "frontend/src/components/TransactionShowModal.tsx": (
+        "Transaction detail modal",
+        [
+            "Read-only view for a single transaction record.",
+        ],
+    ),
+    "frontend/src/components/WebNotificationsPanel.tsx": (
+        "Web notifications plugin panel",
+        [
+            "Permission prompts and status for browser notifications.",
+        ],
+    ),
+    "frontend/src/lib/apiBase.ts": (
+        "API base URL",
+        [
+            "**`VITE_API_URL`** or default **`http://localhost:8000/api`** prefix for axios.",
+        ],
+    ),
+    "frontend/src/lib/budgetStorage.ts": (
+        "Budget localStorage persistence",
+        [
+            "Serializes budget/cashflow state for Budget page.",
+        ],
+    ),
+    "frontend/src/lib/categoryStorage.ts": (
+        "Category registry + assignments",
+        [
+            "localStorage-backed label registry and per-entity category maps for Smart Categorizer UX.",
+        ],
+    ),
+    "frontend/src/lib/categoryTaxonomy.ts": (
+        "Entity kind taxonomy",
+        [
+            "Types/helpers for client/supplier/transaction/stockholder category keys.",
+        ],
+    ),
+    "frontend/src/lib/financeCharts.ts": (
+        "Chart helpers",
+        [
+            "Transforms finance rows for Recharts (overview/analytics).",
+        ],
+    ),
+    "frontend/src/lib/invoiceExportStorage.ts": (
+        "Invoice export defaults storage",
+        [
+            "Persists **`InvoiceExportConfig`** in localStorage.",
+        ],
+    ),
+    "frontend/src/lib/invoiceHistoryStorage.ts": (
+        "Invoice history entries",
+        [
+            "Append/list/update issued invoice metadata for the history table.",
+        ],
+    ),
+    "frontend/src/lib/invoiceNumber.ts": (
+        "Invoice numbering helpers",
+        [
+            "Sequence bump/peek for next invoice numbers in the client.",
+        ],
+    ),
+    "frontend/src/lib/invoiceTemplates.ts": (
+        "Invoice template presets",
+        [
+            "Preset document fragments or defaults for invoice UI.",
+        ],
+    ),
+    "frontend/src/lib/localStorageScope.ts": (
+        "Namespaced localStorage keys",
+        [
+            "Avoids collisions for multi-tenant or multi-tab scoping.",
+        ],
+    ),
+    "frontend/src/lib/marketplaceUrl.ts": (
+        "Public marketplace URL",
+        [
+            "Constant or env for linking to the external plugin marketplace site from the app header.",
+        ],
+    ),
+    "frontend/src/lib/pluginToggles.ts": (
+        "Plugin enable flags storage",
+        [
+            "Loads/saves which installed plugins are toggled on in the UI.",
+        ],
+    ),
+    "frontend/src/lib/taxCalculatorResidencyStorage.ts": (
+        "Tax residency storage",
+        [
+            "Persists calculator residency selection client-side.",
+        ],
+    ),
+    "frontend/src/types/budget.ts": (
+        "Budget TypeScript types",
+        [
+            "Shapes for Budget & cash flow page state.",
+        ],
+    ),
+    "frontend/src/types/invoiceDocument.ts": (
+        "Invoice document types",
+        [
+            "Structured invoice body (customer, line items, dates).",
+        ],
+    ),
+    "frontend/src/types/invoiceExport.ts": (
+        "Invoice export config types",
+        [
+            "Format, document payload, and API mapping helpers.",
+        ],
+    ),
+    "frontend/src/types/plugins.ts": (
+        "Plugin metadata types",
+        [
+            "Installed vs available plugin rows from **`/api/plugins`**.",
+        ],
+    ),
+    "frontend/src/config/meTaxResidency.config.ts": (
+        "Tax residency field config",
+        [
+            "Declarative fields for ME (or template) residency forms in **`DynamicTaxFieldsForm`**.",
+        ],
+    ),
+    "frontend/src/data/smallBusinessSuite.ts": (
+        "Small business checklist data",
+        [
+            "Static suite items for **`SmallBusinessPanel`** presentation.",
+        ],
+    ),
+    "frontend/src/services/taxResidencyRegistry.ts": (
+        "Tax residency registry service",
+        [
+            "Lookup/registry for residency options used by tax UI.",
         ],
     ),
     "frontend/public/favicon.svg": (
@@ -336,7 +735,11 @@ This folder mirrors the `piecemint/` project tree. For each **source file** in t
 
 ## Excluded (by design)
 
-`node_modules/`, `venv/`, `dist/`, `__pycache__/`, and other generated or vendor content are not documented here.
+`node_modules/`, `venv/`, `.venv/`, `dist/`, `__pycache__/`, binary blobs, and other generated or vendor content are not documented here unless explicitly listed in **`SPECS`**.
+
+## Monorepo note
+
+The repo root also contains **`marketplace/`** (separate product). This **`DOCS/piecemint/`** tree documents only **`piecemint/`**.
 
 ## Regenerating
 

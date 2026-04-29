@@ -1,7 +1,22 @@
 # DOCS
 
-Project documentation mirror for **Piecemint**.
+Generated and hand-written documentation for this monorepo.
 
-- **Per-file docs:** `piecemint/` — see [piecemint/README.md](piecemint/README.md).
-- **Regenerate** (after adding or renaming source files):  
-  `python3 DOCS/generate_doc_files.py` from the repo root, then edit `DOCS/generate_doc_files.py` — the `SPECS` dict — to add entries for new paths.
+## Piecemint (`piecemint/`)
+
+- **Per-file mirror:** [`piecemint/README.md`](piecemint/README.md) — explains the naming scheme.
+- **Regenerate** after adding or renaming documented files:
+
+  ```bash
+  python3 DOCS/generate_doc_files.py
+  ```
+
+  Then add a new entry to the **`SPECS`** dict in [`generate_doc_files.py`](generate_doc_files.py).
+
+## Marketplace (`marketplace/`)
+
+There is no mirrored doc tree under **`DOCS/`** yet for the marketplace app. See **`marketplace/frontend`** and **`marketplace/backend`** in the repo.
+
+## Root scripts
+
+From the repo root, **`package.json`** defines **`npm run dev`** (concurrent Piecemint + marketplace dev servers). Piecemint backend dependencies are managed with **Pipenv** in **`piecemint/backend`**.

@@ -15,3 +15,9 @@ export function marketplaceApiPath(path: string): string {
   }
   return p;
 }
+
+/** GET /api/plugins/{pluginId}/icon — same file as Piecemint /api/plugin-assets/{id}. */
+export function marketplacePluginIconUrl(pluginId: string): string {
+  return marketplaceApiPath(`/api/plugins/${encodeURIComponent(pluginId)}/icon`);
+}
+
