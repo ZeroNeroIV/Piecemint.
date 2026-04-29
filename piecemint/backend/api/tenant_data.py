@@ -62,6 +62,7 @@ def get_tenant_data(db: Session, tenant_id: str) -> dict:
                 "date": t.date,
                 "type": t.type,
                 "category": t.category,
+                "notes": t.notes or "",
                 "is_recurring": t.is_recurring,
                 "last_activity": t.last_activity,
             }

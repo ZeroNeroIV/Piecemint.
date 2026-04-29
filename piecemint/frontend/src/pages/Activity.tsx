@@ -8,9 +8,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { AlertTriangle, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, Eye, Plus } from 'lucide-react';
 import { useFinanceData } from '../context/FinanceDataContext';
 import TransactionShowModal, { type TransactionRecord } from '../components/TransactionShowModal';
+import AddTransactionModal from '../components/AddTransactionModal';
 import EntityCategorySelect from '../components/EntityCategorySelect';
 
 const TX_PAGE_SIZE = 10;
@@ -21,6 +22,7 @@ export default function Activity() {
     forecast,
     isPluginActive,
     searchExpenses,
+    refresh,
   } = useFinanceData();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -33,6 +35,7 @@ export default function Activity() {
     last_activity: string;
   } | null>(null);
   const [dismissedZombieIds, setDismissedZombieIds] = useState<string[]>([]);
+  const [addTransactionOpen, setAddTransactionOpen] = useState(false);
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -100,11 +103,22 @@ export default function Activity() {
       </header>
 
       <section>
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-2 h-2 rounded-full bg-ink-black" />
-          <h2 className="text-sm font-bold tracking-widest uppercase text-ink-black/60">
-            All transactions
-          </h2>
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-2 h-2 rounded-full bg-ink-black shrink-0" />
+            <h2 className="text-sm font-bold tracking-widest uppercase text-ink-black/60">
+              All transactions
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAddTransactionOpen(true)}
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-ink-black/15 bg-white text-ink-black hover:bg-canvas-cream transition-colors"
+            aria-label="Add transaction"
+            title="Add transaction"
+          >
+            <Plus size={20} strokeWidth={1.75} aria-hidden />
+          </button>
         </div>
         <div className="card overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -309,6 +323,12 @@ export default function Activity() {
         <TransactionShowModal
           transaction={showTransaction}
           onClose={() => setShowTransaction(null)}
+        />
+      )}
+      {addTransactionOpen && (
+        <AddTransactionModal
+          onClose={() => setAddTransactionOpen(false)}
+          onCreated={() => void refresh()}
         />
       )}
       {reviewSubscription && (

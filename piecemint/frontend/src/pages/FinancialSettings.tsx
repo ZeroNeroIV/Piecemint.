@@ -2,15 +2,24 @@ import { useMemo, useState, type ReactNode } from 'react';
 import {
   defaultFinancialSettings,
   loadFinancialSettings,
+  payoutScheduleOptions,
   saveFinancialSettings,
   type FinancialSettings,
 } from '../lib/financialSettingsStorage';
 
+type StringSettingKey = {
+  [K in keyof FinancialSettings]: FinancialSettings[K] extends string ? K : never;
+}[keyof FinancialSettings];
+
+type BooleanSettingKey = {
+  [K in keyof FinancialSettings]: FinancialSettings[K] extends boolean ? K : never;
+}[keyof FinancialSettings];
+
 type FieldProps = {
-  id: keyof FinancialSettings;
+  id: StringSettingKey;
   label: string;
   value: string;
-  onChange: (id: keyof FinancialSettings, value: string) => void;
+  onChange: (id: StringSettingKey, value: string) => void;
   placeholder?: string;
   type?: 'text' | 'number' | 'url' | 'color';
 };
@@ -59,10 +68,10 @@ function ToggleField({
   checked,
   onChange,
 }: {
-  id: keyof FinancialSettings;
+  id: BooleanSettingKey;
   label: string;
   checked: boolean;
-  onChange: (id: keyof FinancialSettings, checked: boolean) => void;
+  onChange: (id: BooleanSettingKey, checked: boolean) => void;
 }) {
   return (
     <label
@@ -110,12 +119,30 @@ export default function FinancialSettingsPage() {
   const [settings, setSettings] = useState<FinancialSettings>(() => loadFinancialSettings());
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
-  const onTextChange = (id: keyof FinancialSettings, value: string) => {
+  const onTextChange = (id: StringSettingKey, value: string) => {
     setSettings((prev) => ({ ...prev, [id]: value }));
   };
 
-  const onToggleChange = (id: keyof FinancialSettings, checked: boolean) => {
+  const onToggleChange = (id: BooleanSettingKey, checked: boolean) => {
     setSettings((prev) => ({ ...prev, [id]: checked }));
+  };
+
+  const onExportOptionToggle = (option: string, checked: boolean) => {
+    setSettings((prev) => ({
+      ...prev,
+      dataExportOptions: checked
+        ? [...prev.dataExportOptions, option]
+        : prev.dataExportOptions.filter((value) => value !== option),
+    }));
+  };
+
+  const onPaymentMethodToggle = (method: string, checked: boolean) => {
+    setSettings((prev) => ({
+      ...prev,
+      paymentMethods: checked
+        ? [...prev.paymentMethods, method]
+        : prev.paymentMethods.filter((value) => value !== method),
+    }));
   };
 
   const onSave = () => {
@@ -131,6 +158,32 @@ export default function FinancialSettingsPage() {
 
   const baseCurrencyOptions = useMemo(
     () => ['USD', 'EUR', 'GBP', 'AED', 'SAR', 'TRY', 'INR'],
+    []
+  );
+  const dataExportOptions = useMemo(
+    () => [
+      { value: 'csv', label: 'CSV' },
+      { value: 'pdf', label: 'PDF' },
+      { value: 'qbo', label: 'QBO' },
+    ],
+    []
+  );
+  const paymentMethodOptions = useMemo(
+    () => [
+      { value: 'stripe', label: 'Stripe' },
+      { value: 'paypal', label: 'PayPal' },
+      { value: 'bank_transfer', label: 'Bank transfer' },
+    ],
+    []
+  );
+  const payoutScheduleLabels = useMemo<Record<string, string>>(
+    () => ({
+      daily: 'Daily',
+      weekly: 'Weekly',
+      biweekly: 'Biweekly',
+      monthly: 'Monthly',
+      manual: 'Manual',
+    }),
     []
   );
 
@@ -256,20 +309,46 @@ export default function FinancialSettingsPage() {
             onChange={onTextChange}
             placeholder="Example: Stripe acct_..., PayPal merchant email, bank alias"
           />
-          <TextField
-            id="paymentMethods"
-            label="Payment methods"
-            value={settings.paymentMethods}
-            onChange={onTextChange}
-            placeholder="stripe,paypal,bank"
-          />
-          <TextField
-            id="payoutSchedule"
-            label="Payout schedule"
-            value={settings.payoutSchedule}
-            onChange={onTextChange}
-            placeholder="weekly / biweekly / monthly"
-          />
+          <fieldset className="flex flex-col gap-2 text-sm font-medium text-ink-black/85">
+            <legend className="mb-0.5">Payment methods</legend>
+            <div className="rounded-2xl border border-ink-black/15 bg-white p-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {paymentMethodOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    htmlFor={`payment-method-option-${option.value}`}
+                    className="group relative cursor-pointer"
+                  >
+                    <input
+                      id={`payment-method-option-${option.value}`}
+                      type="checkbox"
+                      checked={settings.paymentMethods.includes(option.value)}
+                      onChange={(e) => onPaymentMethodToggle(option.value, e.target.checked)}
+                      className="peer sr-only"
+                    />
+                    <span className="flex items-center rounded-xl border border-ink-black/15 bg-white px-3 py-2.5 text-sm font-medium text-ink-black/90 transition-all group-hover:border-ink-black/30 peer-focus-visible:ring-2 peer-focus-visible:ring-signal-orange/40 peer-checked:border-signal-orange/70 peer-checked:bg-signal-orange/10">
+                      <span>{option.label}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </fieldset>
+          <label className="flex flex-col gap-2 text-sm font-medium text-ink-black/85" htmlFor="payoutSchedule">
+            Payout schedule
+            <select
+              id="payoutSchedule"
+              value={settings.payoutSchedule}
+              onChange={(e) => onTextChange('payoutSchedule', e.target.value)}
+              className="rounded-2xl border border-ink-black/15 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-ink-black/35"
+            >
+              {payoutScheduleOptions.map((value) => (
+                <option key={value} value={value}>
+                  {payoutScheduleLabels[value]}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         <ToggleField
           id="passTransactionFees"
@@ -353,13 +432,31 @@ export default function FinancialSettingsPage() {
         description="Control exports, approval workflow limits, and keep lightweight audit context."
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TextField
-            id="dataExportOptions"
-            label="Data export options"
-            value={settings.dataExportOptions}
-            onChange={onTextChange}
-            placeholder="csv,pdf,json"
-          />
+          <fieldset className="flex flex-col gap-2 text-sm font-medium text-ink-black/85">
+            <legend className="mb-0.5">Data export options</legend>
+            <div className="rounded-2xl border border-ink-black/15 bg-white p-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {dataExportOptions.map((option) => (
+                <label
+                  key={option.value}
+                  htmlFor={`data-export-option-${option.value}`}
+                  className="group relative cursor-pointer"
+                >
+                  <input
+                    id={`data-export-option-${option.value}`}
+                    type="checkbox"
+                    checked={settings.dataExportOptions.includes(option.value)}
+                    onChange={(e) => onExportOptionToggle(option.value, e.target.checked)}
+                    className="peer sr-only"
+                  />
+                  <span className="flex items-center rounded-xl border border-ink-black/15 bg-white px-3 py-2.5 text-sm font-medium text-ink-black/90 transition-all group-hover:border-ink-black/30 peer-focus-visible:ring-2 peer-focus-visible:ring-signal-orange/40 peer-checked:border-signal-orange/70 peer-checked:bg-signal-orange/10">
+                    <span>{option.label}</span>
+                  </span>
+                </label>
+              ))}
+              </div>
+            </div>
+          </fieldset>
           <TextField
             id="approvalWorkflowThreshold"
             label="Approval threshold amount"

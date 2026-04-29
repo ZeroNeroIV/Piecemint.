@@ -4,6 +4,7 @@ export type TransactionRecord = {
   date: string;
   type: string;
   category: string;
+  notes?: string;
   is_recurring: boolean;
   last_activity: string;
 };
@@ -71,6 +72,12 @@ export default function TransactionShowModal({ transaction: t, onClose }: Transa
             <dt className="text-xs font-bold tracking-widest uppercase text-ink-black/45 mb-1">Category</dt>
             <dd className="text-ink-black">{t.category || '—'}</dd>
           </div>
+          {(t.notes?.trim() ?? '') !== '' && (
+            <div>
+              <dt className="text-xs font-bold tracking-widest uppercase text-ink-black/45 mb-1">Memo</dt>
+              <dd className="text-ink-black whitespace-pre-wrap">{t.notes}</dd>
+            </div>
+          )}
           <div>
             <dt className="text-xs font-bold tracking-widest uppercase text-ink-black/45 mb-1">Recurring</dt>
             <dd className="text-ink-black">{t.is_recurring ? 'Yes' : 'No'}</dd>

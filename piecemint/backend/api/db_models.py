@@ -60,6 +60,7 @@ class Transaction(Base):
     date: Mapped[str] = mapped_column(String(32), nullable=False)  # ISO YYYY-MM-DD
     type: Mapped[str] = mapped_column(String(32), nullable=False)  # income | expense
     category: Mapped[str] = mapped_column(String(255), default="")
+    notes: Mapped[str] = mapped_column(Text, default="")
     is_recurring: Mapped[bool] = mapped_column(Boolean, default=False)
     last_activity: Mapped[str] = mapped_column(String(32), nullable=False)
 

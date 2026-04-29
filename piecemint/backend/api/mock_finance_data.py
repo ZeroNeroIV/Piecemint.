@@ -143,6 +143,7 @@ def _tx(
         date=day,
         type=tx_type,
         category=category,
+        notes="",
         is_recurring=recurring,
         last_activity=day,
     )

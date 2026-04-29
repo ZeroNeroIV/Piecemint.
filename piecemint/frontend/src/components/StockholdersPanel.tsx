@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { Plus, X } from 'lucide-react';
 import { useFinanceData } from '../context/FinanceDataContext';
@@ -10,6 +10,7 @@ import { API_BASE } from '../lib/apiBase';
  */
 export default function StockholdersPanel() {
   const { stockholders, refresh } = useFinanceData();
+  const panelRef = useRef<HTMLElement | null>(null);
   const [removedIds, setRemovedIds] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -23,6 +24,39 @@ export default function StockholdersPanel() {
     () => stockholders.filter((s: { id: string }) => !removedIds.includes(s.id)),
     [stockholders, removedIds]
   );
+
+  useEffect(() => {
+    const closeOpenMenus = () => {
+      const panel = panelRef.current;
+      if (!panel) return;
+      const openMenus = panel.querySelectorAll('details[open]');
+      openMenus.forEach((menu) => {
+        menu.removeAttribute('open');
+      });
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const panel = panelRef.current;
+      if (!panel) return;
+      const target = event.target as Node | null;
+      if (!target) return;
+      const openMenus = Array.from(panel.querySelectorAll('details[open]'));
+      if (openMenus.length === 0) return;
+      const clickedInsideOpenMenu = openMenus.some((menu) => menu.contains(target));
+      if (!clickedInsideOpenMenu) closeOpenMenus();
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeOpenMenus();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const resetForm = () => {
     setEditingId(null);
@@ -100,7 +134,7 @@ export default function StockholdersPanel() {
   };
 
   return (
-    <section>
+    <section ref={panelRef}>
       <div className="mb-5 card p-4 md:p-5">
         <div className="flex items-center justify-between gap-3 mb-3">
           <h3 className="text-sm font-bold tracking-widest uppercase text-ink-black/60">

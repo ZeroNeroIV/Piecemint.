@@ -49,17 +49,28 @@ const DEBUG_MOCK_SUPPLIERS = [
 ];
 
 const DEBUG_MOCK_TRANSACTIONS = [
-  { id: 'tx_demo_1', amount: 12000, date: '2026-04-03', type: 'income', category: 'Consulting', is_recurring: true, last_activity: '2026-04-03' },
-  { id: 'tx_demo_2', amount: -5200, date: '2026-04-07', type: 'expense', category: 'Microsoft Azure', is_recurring: true, last_activity: '2026-02-11' },
-  { id: 'tx_demo_3', amount: -3400, date: '2026-04-11', type: 'expense', category: 'AWS Cloud', is_recurring: true, last_activity: '2026-01-27' },
-  { id: 'tx_demo_4', amount: -2100, date: '2026-04-16', type: 'expense', category: 'Cisco Meraki', is_recurring: true, last_activity: '2026-02-02' },
-  { id: 'tx_demo_5', amount: 6800, date: '2026-04-18', type: 'income', category: 'Product Sale', is_recurring: false, last_activity: '2026-04-18' },
+  { id: 'tx_demo_1', amount: 12000, date: '2026-04-03', type: 'income', category: 'Consulting', notes: '', is_recurring: true, last_activity: '2026-04-03' },
+  { id: 'tx_demo_2', amount: -5200, date: '2026-04-07', type: 'expense', category: 'Microsoft Azure', notes: '', is_recurring: true, last_activity: '2026-02-11' },
+  { id: 'tx_demo_3', amount: -3400, date: '2026-04-11', type: 'expense', category: 'AWS Cloud', notes: '', is_recurring: true, last_activity: '2026-01-27' },
+  { id: 'tx_demo_4', amount: -2100, date: '2026-04-16', type: 'expense', category: 'Cisco Meraki', notes: '', is_recurring: true, last_activity: '2026-02-02' },
+  { id: 'tx_demo_5', amount: 6800, date: '2026-04-18', type: 'income', category: 'Product Sale', notes: '', is_recurring: false, last_activity: '2026-04-18' },
 ];
 
 const DEBUG_MOCK_STOCKHOLDERS = [
   { id: 'sh_demo_1', name: 'Ada Founder', email: 'ada@example.com', share_percent: 62, notes: 'Lead founder' },
   { id: 'sh_demo_2', name: 'Sam Partner', email: 'sam@example.com', share_percent: 38, notes: 'Operations partner' },
 ];
+
+function mergeById<T extends { id: string }>(base: T[], extra: T[]): T[] {
+  if (!extra.length) return base;
+  const seen = new Set(base.map((x) => x.id));
+  const merged = [...base];
+  for (const row of extra) {
+    if (seen.has(row.id)) continue;
+    merged.push(row);
+  }
+  return merged;
+}
 
 type FinanceDataContextValue = {
   clients: any[];
@@ -160,11 +171,18 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       if (mockDataEnabled) {
-        const pluginsRes = await axios.get(`${API_URL}/plugins`);
-        setClients(DEBUG_MOCK_CLIENTS);
-        setSuppliers(DEBUG_MOCK_SUPPLIERS);
-        setTransactions(DEBUG_MOCK_TRANSACTIONS);
-        setStockholders(DEBUG_MOCK_STOCKHOLDERS);
+        const [clientsRes, suppliersRes, transRes, stockRes, pluginsRes] = await Promise.all([
+          axios.get(`${API_URL}/core/clients`),
+          axios.get(`${API_URL}/core/suppliers`),
+          axios.get(`${API_URL}/core/transactions`),
+          axios.get(`${API_URL}/core/stockholders`),
+          axios.get(`${API_URL}/plugins`),
+        ]);
+        // Keep demo fixtures visible in mock mode, while also surfacing newly created live rows.
+        setClients(mergeById(DEBUG_MOCK_CLIENTS, clientsRes.data));
+        setSuppliers(mergeById(DEBUG_MOCK_SUPPLIERS, suppliersRes.data));
+        setTransactions(mergeById(DEBUG_MOCK_TRANSACTIONS, transRes.data));
+        setStockholders(mergeById(DEBUG_MOCK_STOCKHOLDERS, stockRes.data));
         setPlugins(pluginsRes.data);
         setTaxReserve(null);
         setForecast([]);

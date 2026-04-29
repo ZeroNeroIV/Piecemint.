@@ -44,6 +44,7 @@ def _tx_out(t: db_models.Transaction) -> Transaction:
         date=t.date,
         type=t.type,
         category=t.category,
+        notes=t.notes or "",
         is_recurring=t.is_recurring,
         last_activity=t.last_activity,
     )
@@ -161,6 +162,7 @@ def create_transaction(
         date=body.date,
         type=body.type,
         category=body.category,
+        notes=body.notes or "",
         is_recurring=body.is_recurring,
         last_activity=last,
     )

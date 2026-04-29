@@ -33,6 +33,7 @@ class Transaction(BaseModel):
     date: str
     type: str  # income | expense
     category: str
+    notes: str = ""
     is_recurring: bool
     last_activity: str
 
@@ -42,6 +43,7 @@ class TransactionCreate(BaseModel):
     date: str
     type: str
     category: str = ""
+    notes: str = ""
     is_recurring: bool = False
     last_activity: str | None = None
 

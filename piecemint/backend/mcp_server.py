@@ -179,6 +179,7 @@ def list_transactions(tenant: str, limit: int = 50) -> str:
                 "date": t.date,
                 "type": t.type,
                 "category": t.category,
+                "notes": t.notes or "",
                 "is_recurring": t.is_recurring,
             }
             for t in rows

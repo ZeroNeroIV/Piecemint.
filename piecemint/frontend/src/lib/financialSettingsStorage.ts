@@ -1,6 +1,27 @@
 import { getItemMigrated, setItemMigrated } from './localStorageScope';
 
 const STORAGE_KEY = 'ff_financial_settings_v1';
+export const payoutScheduleOptions = ['daily', 'weekly', 'biweekly', 'monthly', 'manual'] as const;
+const payoutScheduleAliasMap: Record<string, (typeof payoutScheduleOptions)[number]> = {
+  day: 'daily',
+  daily: 'daily',
+  week: 'weekly',
+  weekly: 'weekly',
+  'every week': 'weekly',
+  'once a week': 'weekly',
+  biweekly: 'biweekly',
+  'bi-weekly': 'biweekly',
+  fortnightly: 'biweekly',
+  'every 2 weeks': 'biweekly',
+  monthly: 'monthly',
+  month: 'monthly',
+  'once a month': 'monthly',
+  manual: 'manual',
+  on_demand: 'manual',
+  ondemand: 'manual',
+  ad_hoc: 'manual',
+  adhoc: 'manual',
+};
 
 export type FinancialSettings = {
   businessName: string;
@@ -17,7 +38,7 @@ export type FinancialSettings = {
   taxExemptions: string;
   taxBufferPercent: string;
   linkedAccounts: string;
-  paymentMethods: string;
+  paymentMethods: string[];
   payoutSchedule: string;
   passTransactionFees: boolean;
   invoiceLogoUrl: string;
@@ -32,7 +53,7 @@ export type FinancialSettings = {
   receiptRules: string;
   ocrEnabled: boolean;
   mileageRate: string;
-  dataExportOptions: string;
+  dataExportOptions: string[];
   auditLogsSummary: string;
   approvalWorkflowThreshold: string;
 };
@@ -52,7 +73,7 @@ export const defaultFinancialSettings: FinancialSettings = {
   taxExemptions: '',
   taxBufferPercent: '10',
   linkedAccounts: '',
-  paymentMethods: 'stripe,paypal,bank',
+  paymentMethods: ['stripe', 'paypal', 'bank_transfer'],
   payoutSchedule: 'weekly',
   passTransactionFees: false,
   invoiceLogoUrl: '',
@@ -67,19 +88,52 @@ export const defaultFinancialSettings: FinancialSettings = {
   receiptRules: '',
   ocrEnabled: true,
   mileageRate: '0.67',
-  dataExportOptions: 'csv,pdf',
+  dataExportOptions: ['csv', 'pdf'],
   auditLogsSummary: '',
   approvalWorkflowThreshold: '1000',
 };
+
+export function normalizePayoutSchedule(value: unknown): FinancialSettings['payoutSchedule'] {
+  if (typeof value !== 'string') return defaultFinancialSettings.payoutSchedule;
+  const normalized = value.trim().toLowerCase().replace(/\s+/g, ' ');
+  return payoutScheduleAliasMap[normalized] ?? defaultFinancialSettings.payoutSchedule;
+}
 
 export function loadFinancialSettings(): FinancialSettings {
   if (typeof localStorage === 'undefined') return { ...defaultFinancialSettings };
   try {
     const raw = getItemMigrated(STORAGE_KEY);
     if (!raw) return { ...defaultFinancialSettings };
-    const parsed = JSON.parse(raw) as Partial<FinancialSettings> | null;
+    const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== 'object') return { ...defaultFinancialSettings };
-    return { ...defaultFinancialSettings, ...parsed };
+    const parsedRecord = parsed as Record<string, unknown>;
+    const rawExportOptions = parsedRecord.dataExportOptions;
+    const rawPaymentMethods = parsedRecord.paymentMethods;
+    const rawPayoutSchedule = parsedRecord.payoutSchedule;
+    const normalizedExportOptions = Array.isArray(rawExportOptions)
+      ? rawExportOptions.filter((value): value is string => typeof value === 'string')
+      : typeof rawExportOptions === 'string'
+        ? rawExportOptions
+            .split(',')
+            .map((value) => value.trim().toLowerCase())
+            .filter(Boolean)
+        : defaultFinancialSettings.dataExportOptions;
+    const normalizedPaymentMethods = Array.isArray(rawPaymentMethods)
+      ? rawPaymentMethods.filter((value): value is string => typeof value === 'string')
+      : typeof rawPaymentMethods === 'string'
+        ? rawPaymentMethods
+            .split(',')
+            .map((value) => value.trim().toLowerCase())
+            .filter(Boolean)
+            .map((value) => (value === 'bank' ? 'bank_transfer' : value))
+        : defaultFinancialSettings.paymentMethods;
+    return {
+      ...defaultFinancialSettings,
+      ...(parsedRecord as Partial<FinancialSettings>),
+      dataExportOptions: normalizedExportOptions,
+      paymentMethods: normalizedPaymentMethods,
+      payoutSchedule: normalizePayoutSchedule(rawPayoutSchedule),
+    };
   } catch {
     return { ...defaultFinancialSettings };
   }
