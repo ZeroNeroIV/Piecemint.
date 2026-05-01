@@ -19,10 +19,12 @@ app = FastAPI(title="MarketPlace API")
 # Allow CORS for local frontend development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
-    allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_origins=["*"],
+    # Wildcard origins are incompatible with credentialed browser requests; public catalog API
+    # does not need cookies.
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -111,6 +113,12 @@ def discover_piecemint_plugins() -> List[Plugin]:
 
 # Populated at import; restart the API after adding plugin folders.
 PLUGINS: List[Plugin] = discover_piecemint_plugins()
+
+
+@app.get("/api/health")
+def health():
+    """Liveness probe (Render, docker compose, debugging)."""
+    return {"status": "ok", "catalog_plugins": len(PLUGINS)}
 
 
 @app.get("/api/plugins/{plugin_id}/download")

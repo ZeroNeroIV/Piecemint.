@@ -19,7 +19,7 @@ services:
     region: oregon
     dockerfilePath: ./marketplace/backend/Dockerfile
     dockerContext: .
-    healthCheckPath: /
+    healthCheckPath: /api/health
     buildFilter:
       paths:
         - marketplace/**

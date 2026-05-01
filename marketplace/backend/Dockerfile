@@ -5,7 +5,7 @@ WORKDIR /frontend
 COPY marketplace/frontend/package.json marketplace/frontend/package-lock.json ./
 RUN npm ci
 COPY marketplace/frontend/ ./
-ARG VITE_MAIN_APP_URL=http://localhost:5173
+ARG VITE_MAIN_APP_URL=http://127.0.0.1:5173
 ARG VITE_MARKETPLACE_API_URL=/api
 ENV VITE_MAIN_APP_URL=$VITE_MAIN_APP_URL
 ENV VITE_MARKETPLACE_API_URL=$VITE_MARKETPLACE_API_URL

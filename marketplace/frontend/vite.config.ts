@@ -8,7 +8,9 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: 'http://localhost:8001',
+        // Use 127.0.0.1 (not localhost): many hosts resolve localhost → ::1 first while
+        // uvicorn binds 127.0.0.1 only, so the proxy would otherwise get connection refused.
+        target: 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
     },

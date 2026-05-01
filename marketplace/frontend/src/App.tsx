@@ -91,7 +91,9 @@ function App() {
         setPlugins(res.data)
       })
       .catch(() => {
-        setCatalogError('Could not load catalog. Start the marketplace API on port 8001.')
+        setCatalogError(
+          'Could not load catalog. Run `npm run marketplace-be` (API on http://127.0.0.1:8001).',
+        )
         console.error('Error fetching plugins: marketplace API unreachable')
       })
   }, []);
@@ -114,7 +116,7 @@ function App() {
       URL.revokeObjectURL(objectUrl)
     } catch (e) {
       console.error(e)
-      alert('Download failed. Is the marketplace API running on http://localhost:8001 ?')
+      alert('Download failed. Is the marketplace API running on http://127.0.0.1:8001 ?')
     } finally {
       setDownloadingId(null)
     }

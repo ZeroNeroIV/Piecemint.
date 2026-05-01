@@ -1,7 +1,7 @@
 /** Piecemint web app (Vite dev default 5173). */
 const main = import.meta.env.VITE_MAIN_APP_URL;
 export const MAIN_APP_URL: string =
-  typeof main === 'string' && main.length > 0 ? main.replace(/\/$/, '') : 'http://localhost:5173';
+  typeof main === 'string' && main.length > 0 ? main.replace(/\/$/, '') : 'http://127.0.0.1:5173';
 
 /**
  * Marketplace catalog API. Empty string = same origin (use Vite proxy in dev: `/api` → backend).
