@@ -10,6 +10,7 @@ import Marketplace from './pages/Marketplace';
 import PluginDocsPage from './pages/PluginDocsPage';
 import PluginPage from './pages/PluginPage';
 import FinancialSettingsPage from './pages/FinancialSettings';
+import PricingPage from './pages/PricingPage';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
             <Route path="/activity" element={<Activity />} />
             <Route path="/budget" element={<BudgetCashFlow />} />
             <Route path="/financial-settings" element={<FinancialSettingsPage />} />
+            <Route path="/prices" element={<PricingPage />} />
             <Route path="/library" element={<Marketplace />} />
             <Route path="/marketplace" element={<Navigate to="/library" replace />} />
             <Route path="/docs/plugins" element={<PluginDocsPage />} />

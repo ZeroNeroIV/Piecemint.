@@ -1,4 +1,5 @@
 import mimetypes
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -41,9 +42,21 @@ app.include_router(core_router)
 app.include_router(dev_router)
 
 
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to Piecemint API"}
+def _spa_static_dir() -> str | None:
+    raw = os.environ.get("PIECEMINT_STATIC_DIR", "").strip()
+    if not raw or not os.path.isdir(raw):
+        return None
+    return raw
+
+
+SPA_STATIC_DIR = _spa_static_dir()
+
+
+if SPA_STATIC_DIR is None:
+
+    @app.get("/")
+    def read_root():
+        return {"message": "Welcome to Piecemint API"}
 
 
 @app.get("/api/plugins")
@@ -62,3 +75,9 @@ def serve_plugin_icon(plugin_id: str):
         raise HTTPException(status_code=404, detail="No icon for this plugin.")
     media_type, _ = mimetypes.guess_type(path)
     return FileResponse(path, media_type=media_type or "application/octet-stream")
+
+
+if SPA_STATIC_DIR is not None:
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/", StaticFiles(directory=SPA_STATIC_DIR, html=True), name="spa")

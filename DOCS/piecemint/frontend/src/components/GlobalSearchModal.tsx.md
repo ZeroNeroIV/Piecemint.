@@ -4,4 +4,4 @@
 
 ## Overview
 
-- Shortcut-driven modal for jumping to routes or records; high z-index shell.
+- Shortcut-driven modal for jumping to routes or records; high z-index shell; **`CORE_ITEMS`** lists pages including **`/prices`**.

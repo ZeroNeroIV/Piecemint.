@@ -9,6 +9,7 @@ import {
   Wallet2,
   Zap,
   ShieldCheck,
+  CircleDollarSign,
   Puzzle,
   Plug,
   Store,
@@ -51,6 +52,7 @@ const coreNav: {
   { to: '/contacts', label: 'Clients & suppliers', icon: Users, end: false },
   { to: '/activity', label: 'Transactions & alerts', icon: Zap, end: false },
   { to: '/financial-settings', label: 'Financial settings', icon: ShieldCheck, end: false },
+  { to: '/prices', label: 'Prices', icon: CircleDollarSign, end: false },
 ];
 
 function useDelayedTooltip(active: boolean) {

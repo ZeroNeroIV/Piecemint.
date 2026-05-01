@@ -4,4 +4,4 @@
 
 ## Overview
 
-- Floating Piecemint header, collapsible sidebar rail, mobile nav; **`GlobalSearchModal`** (⌘K).
+- Floating Piecemint header, collapsible sidebar rail, mobile nav; **`GlobalSearchModal`** (⌘K); core sidebar includes **`/prices`**.

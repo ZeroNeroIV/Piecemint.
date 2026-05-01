@@ -363,7 +363,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
         "Root React component: router and data provider",
         [
             "Wraps the app in **`BrowserRouter`**, **`FinanceDataProvider`**, and **`Routes`** with **`AppLayout`** as the parent route.",
-            "Routes: **`/`** Overview, **`/analytics`**, **`/contacts`**, **`/activity`**, **`/budget`**, **`/marketplace`**, **`/docs/plugins`**, **`/plugin/:pluginId`**.",
+            "Routes: **`/`** Overview, **`/analytics`**, **`/contacts`**, **`/activity`**, **`/budget`**, **`/financial-settings`**, **`/prices`**, **`/library`**, redirects **`/marketplace`** → **`/library`**, **`/docs/plugins`**, **`/plugin/:pluginId`**.",
         ],
     ),
     "frontend/src/pages/Overview.tsx": (
@@ -404,6 +404,12 @@ SPECS: dict[str, tuple[str, list[str]]] = {
             "**`GET /api/plugins`** for installed vs available; enable toggles, delete dev plugins, **`AddPluginModal`** zip/paste install to **`/api/dev/...`**.",
         ],
     ),
+    "frontend/src/pages/PricingPage.tsx": (
+        "Prices / plans page",
+        [
+            "Route **`/prices`**: marketing-style tiers **Free** (core only), **Pro** (**$15/mo**, free plugins + paid plugin add‑ons), **Enterprise** (**Contact us**).",
+        ],
+    ),
     "frontend/src/pages/PluginDocsPage.tsx": (
         "In-app plugin documentation",
         [
@@ -426,7 +432,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
     "frontend/src/components/AppLayout.tsx": (
         "App chrome: header, sidebar, search",
         [
-            "Floating Piecemint header, collapsible sidebar rail, mobile nav; **`GlobalSearchModal`** (⌘K).",
+            "Floating Piecemint header, collapsible sidebar rail, mobile nav; **`GlobalSearchModal`** (⌘K); core sidebar includes **`/prices`**.",
         ],
     ),
     "frontend/src/components/AddContactEntityModal.tsx": (
@@ -468,7 +474,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
     "frontend/src/components/GlobalSearchModal.tsx": (
         "Global ⌘K search modal",
         [
-            "Shortcut-driven modal for jumping to routes or records; high z-index shell.",
+            "Shortcut-driven modal for jumping to routes or records; high z-index shell; **`CORE_ITEMS`** lists pages including **`/prices`**.",
         ],
     ),
     "frontend/src/components/InvoiceDocumentForm.tsx": (

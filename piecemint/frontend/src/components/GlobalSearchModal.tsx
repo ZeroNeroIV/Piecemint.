@@ -12,6 +12,7 @@ import {
   Plug,
   User,
   Building2,
+  CircleDollarSign,
   type LucideIcon,
 } from 'lucide-react';
 import { useFinanceData } from '../context/FinanceDataContext';
@@ -88,6 +89,14 @@ const CORE_ITEMS: CoreEntry[] = [
     section: 'Pages',
     kws: 'activity transactions alerts feed events history',
     Icon: Zap,
+  },
+  {
+    to: '/prices',
+    title: 'Prices',
+    subtitle: 'Plans: Free, Pro, Enterprise',
+    section: 'Pages',
+    kws: 'prices pricing billing subscription plans free pro enterprise tier plugins paid cost',
+    Icon: CircleDollarSign,
   },
   {
     to: '/library',
