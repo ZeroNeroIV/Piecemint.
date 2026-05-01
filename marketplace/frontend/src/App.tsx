@@ -84,18 +84,39 @@ function App() {
   };
 
   useEffect(() => {
-    axios
-      .get<Plugin[]>(marketplaceApiPath('/api/plugins'))
-      .then((res) => {
-        setCatalogError(null)
-        setPlugins(res.data)
-      })
-      .catch(() => {
-        setCatalogError(
-          'Could not load catalog. From repo root run `npm run marketplace-be-install-packages` then `npm run marketplace-be` (API http://127.0.0.1:8001).',
-        )
-        console.error('Error fetching plugins: marketplace API unreachable')
-      })
+    let cancelled = false
+    const delaysMs = [0, 350, 900, 2000]
+
+    async function fetchCatalog(): Promise<void> {
+      let lastErr: unknown
+      for (let i = 0; i < delaysMs.length; i++) {
+        if (cancelled) return
+        if (delaysMs[i] > 0) {
+          await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, delaysMs[i])
+          })
+        }
+        try {
+          const res = await axios.get<Plugin[]>(marketplaceApiPath('/api/plugins'))
+          if (cancelled) return
+          setCatalogError(null)
+          setPlugins(res.data)
+          return
+        } catch (e) {
+          lastErr = e
+        }
+      }
+      if (cancelled) return
+      console.error('Marketplace catalog failed after retries', lastErr)
+      setCatalogError(
+        "Could not load catalog. Ensure the API is running: from repo root `npm run marketplace-be-install-packages` then `npm run marketplace-be`. With `npm run dev`, the UI proxies `/api` to http://127.0.0.1:8001 — avoid `VITE_MARKETPLACE_API_URL=http://localhost:8001` in dev (use the proxy or http://127.0.0.1:8001).",
+      )
+    }
+
+    fetchCatalog()
+    return () => {
+      cancelled = true
+    }
   }, []);
 
   const downloadPluginZip = async (pluginId: string) => {
