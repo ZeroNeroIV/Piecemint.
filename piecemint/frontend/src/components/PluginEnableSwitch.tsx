@@ -12,6 +12,11 @@ type PluginEnableSwitchProps = {
   hint?: string;
   /** Manifest icon for this plugin (sidebar / library consistency). */
   hasIcon?: boolean;
+  /**
+   * Switch only (no glyph or visible label). Use where title/icon already appear nearby.
+   * Accessibility via aria-label on the switch.
+   */
+  compact?: boolean;
 };
 
 export function PluginEnableSwitch({
@@ -22,8 +27,53 @@ export function PluginEnableSwitch({
   locked,
   hint,
   hasIcon,
+  compact,
 }: PluginEnableSwitchProps) {
   const label = hint ? `Enable ${name} ${hint}` : `Enable ${name}`;
+  const ariaLabel =
+    locked
+      ? `${label}. Install the plugin on the server before you can enable it in the app.`
+      : label;
+
+  const switchButton = (
+    <button
+      type="button"
+      role="switch"
+      id={`${pluginId}-switch`}
+      aria-checked={enabled}
+      aria-label={compact ? ariaLabel : undefined}
+      aria-labelledby={compact ? undefined : `${pluginId}-label`}
+      disabled={!!locked}
+      title={
+        locked
+          ? 'Install the plugin on the server before you can enable it in the app.'
+          : undefined
+      }
+      onClick={() => {
+        if (locked) return;
+        onChange(!enabled);
+      }}
+      className={[
+        'relative h-7 w-12 shrink-0 rounded-full border-2 transition-colors',
+        locked ? 'border-ink-black/10 bg-ink-black/5 cursor-not-allowed opacity-60' : 'border-ink-black/20',
+        enabled && !locked ? 'bg-signal-orange border-signal-orange' : !locked && 'bg-white',
+      ].join(' ')}
+    >
+      <span
+        className={[
+          'absolute top-0.5 h-5 w-5 rounded-full bg-canvas-cream border border-ink-black/20 shadow-sm transition-transform',
+          enabled ? 'left-[calc(100%-1.4rem)]' : 'left-0.5',
+        ].join(' ')}
+      />
+      <span className="sr-only">
+        {enabled ? 'On' : 'Off'}
+      </span>
+    </button>
+  );
+
+  if (compact) {
+    return <div className="flex justify-end">{switchButton}</div>;
+  }
 
   return (
     <div className="flex items-center justify-between gap-3">
@@ -38,30 +88,7 @@ export function PluginEnableSwitch({
           )}
         </span>
       </div>
-      <button
-        type="button"
-        role="switch"
-        id={`${pluginId}-switch`}
-        aria-checked={enabled}
-        aria-labelledby={`${pluginId}-label`}
-        disabled={!!locked}
-        onClick={() => onChange(!enabled)}
-        className={[
-          'relative h-7 w-12 shrink-0 rounded-full border-2 transition-colors',
-          locked ? 'border-ink-black/10 bg-ink-black/5 cursor-not-allowed opacity-60' : 'border-ink-black/20',
-          enabled && !locked ? 'bg-signal-orange border-signal-orange' : !locked && 'bg-white',
-        ].join(' ')}
-      >
-        <span
-          className={[
-            'absolute top-0.5 h-5 w-5 rounded-full bg-canvas-cream border border-ink-black/20 shadow-sm transition-transform',
-            enabled ? 'left-[calc(100%-1.4rem)]' : 'left-0.5',
-          ].join(' ')}
-        />
-        <span className="sr-only">
-          {enabled ? 'On' : 'Off'}
-        </span>
-      </button>
+      {switchButton}
     </div>
   );
 }

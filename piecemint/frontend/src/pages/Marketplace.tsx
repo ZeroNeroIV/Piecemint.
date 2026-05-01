@@ -267,16 +267,7 @@ export default function Marketplace() {
                     installedRow ? 'border-ink-black/5' : 'bg-canvas-cream border-ink-black/10 shadow-none',
                   ].join(' ')}
                 >
-                  <div className="p-2 border-b border-ink-black/10 bg-ink-black/[0.02]">
-                    <PluginEnableSwitch
-                      pluginId={p.id}
-                      name={p.name}
-                      enabled={isPluginEnabled(p.id)}
-                      onChange={(next) => setPluginEnabled(p.id, next)}
-                      hasIcon={p.has_icon}
-                    />
-                  </div>
-                  <div className="p-6 pt-5">
+                  <div className="p-6">
                     <div className="flex justify-between items-start mb-6">
                       <div
                         className={[
@@ -292,14 +283,25 @@ export default function Marketplace() {
                           imgClassName="rounded-md"
                         />
                       </div>
-                      <span
-                        className={[
-                          'text-xs font-bold px-3 py-1 rounded-full',
-                          installedRow ? 'bg-ink-black/5' : 'bg-white shadow-sm',
-                        ].join(' ')}
-                      >
-                        v{p.version}
-                      </span>
+                      <div className="flex flex-col items-end gap-2">
+                        <span
+                          className={[
+                            'text-xs font-bold px-3 py-1 rounded-full',
+                            installedRow ? 'bg-ink-black/5' : 'bg-white shadow-sm',
+                          ].join(' ')}
+                        >
+                          v{p.version}
+                        </span>
+                        <PluginEnableSwitch
+                          pluginId={p.id}
+                          name={p.name}
+                          enabled={installedRow ? isPluginEnabled(p.id) : false}
+                          onChange={(next) => setPluginEnabled(p.id, next)}
+                          locked={!installedRow}
+                          hint={installedRow ? undefined : '(not installed)'}
+                          compact
+                        />
+                      </div>
                     </div>
                     <h3
                       className={[
