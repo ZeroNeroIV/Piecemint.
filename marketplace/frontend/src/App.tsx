@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from 'react'
-import axios from 'axios'
 import {
   Search,
   FileText,
@@ -15,7 +14,12 @@ import {
   LayoutDashboard,
 } from 'lucide-react'
 import ForDevelopers from './ForDevelopers'
-import { marketplaceApiPath, MAIN_APP_URL, marketplacePluginIconUrl } from './lib/urls'
+import {
+  axiosGetMarketplaceJson,
+  fetchMarketplaceBlob,
+  marketplaceDirectApiUrl,
+} from './lib/catalogApi'
+import { MAIN_APP_URL, marketplacePluginIconUrl } from './lib/urls'
 
 interface Plugin {
   id: string;
@@ -34,14 +38,26 @@ function PluginCatalogGlyph({
   pluginIcons: Record<string, React.ElementType>;
 }) {
   const [broken, setBroken] = useState(false);
+  const [iconSrc, setIconSrc] = useState(() =>
+    marketplacePluginIconUrl(plugin.id),
+  );
   const Icon = pluginIcons[plugin.id] || Puzzle;
   if (plugin.has_icon && !broken) {
+    const directIcon = marketplaceDirectApiUrl(
+      `/api/plugins/${encodeURIComponent(plugin.id)}/icon`,
+    );
     return (
       <img
-        src={marketplacePluginIconUrl(plugin.id)}
+        src={iconSrc}
         alt=""
         className="w-16 h-16 mb-4 object-contain rounded-2xl shrink-0 ring-1 ring-ink-black/10 bg-white/50"
-        onError={() => setBroken(true)}
+        onError={() => {
+          if (iconSrc !== directIcon) {
+            setIconSrc(directIcon);
+          } else {
+            setBroken(true);
+          }
+        }}
       />
     );
   }
@@ -85,32 +101,22 @@ function App() {
 
   useEffect(() => {
     let cancelled = false
-    const delaysMs = [0, 350, 900, 2000]
 
     async function fetchCatalog(): Promise<void> {
-      let lastErr: unknown
-      for (let i = 0; i < delaysMs.length; i++) {
-        if (cancelled) return
-        if (delaysMs[i] > 0) {
-          await new Promise<void>((resolve) => {
-            window.setTimeout(resolve, delaysMs[i])
-          })
-        }
-        try {
-          const res = await axios.get<Plugin[]>(marketplaceApiPath('/api/plugins'))
-          if (cancelled) return
+      try {
+        const data = await axiosGetMarketplaceJson<Plugin[]>('/api/plugins')
+        if (!cancelled) {
           setCatalogError(null)
-          setPlugins(res.data)
-          return
-        } catch (e) {
-          lastErr = e
+          setPlugins(data)
+        }
+      } catch (lastErr) {
+        if (!cancelled) {
+          console.error('Marketplace catalog failed (proxy + 127.0.0.1:8001 fallbacks exhausted)', lastErr)
+          setCatalogError(
+            'Could not reach the marketplace API after retries. Run from repo root: npm run marketplace-be-install-packages && npm run marketplace-be — then npm run marketplace-fe (or full npm run dev). The app tries same-origin /api via Vite, then http://127.0.0.1:8001.',
+          )
         }
       }
-      if (cancelled) return
-      console.error('Marketplace catalog failed after retries', lastErr)
-      setCatalogError(
-        "Could not load catalog. Ensure the API is running: from repo root `npm run marketplace-be-install-packages` then `npm run marketplace-be`. With `npm run dev`, the UI proxies `/api` to http://127.0.0.1:8001 — avoid `VITE_MARKETPLACE_API_URL=http://localhost:8001` in dev (use the proxy or http://127.0.0.1:8001).",
-      )
     }
 
     fetchCatalog()
@@ -123,8 +129,9 @@ function App() {
     if (downloadingId) return
     setDownloadingId(pluginId)
     try {
-      const url = marketplaceApiPath(`/api/plugins/${encodeURIComponent(pluginId)}/download`)
-      const res = await fetch(url)
+      const res = await fetchMarketplaceBlob(
+        `/api/plugins/${encodeURIComponent(pluginId)}/download`,
+      )
       if (!res.ok) {
         throw new Error(await res.text())
       }
@@ -345,7 +352,11 @@ function App() {
                     {/* Circular portrait card */}
                     <div className="relative mb-6 group">
                       <div className="w-[260px] h-[260px] rounded-full bg-lifted-cream border border-ink-black/5 shadow-[0px_24px_48px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center p-8 text-center transition-transform duration-500 group-hover:scale-105 bg-white">
-                        <PluginCatalogGlyph plugin={plugin} pluginIcons={pluginIcons} />
+                        <PluginCatalogGlyph
+                          key={plugin.id}
+                          plugin={plugin}
+                          pluginIcons={pluginIcons}
+                        />
                         <h3 className="text-[24px] leading-[1.2]">{plugin.name}</h3>
                       </div>
                       
