@@ -46,17 +46,20 @@ export default function ForDevelopers() {
         <p className="text-ink-black/80">
           Each plugin is a directory next to the backend code, for example{' '}
           <code className="text-sm bg-ink-black/5 px-1.5 py-0.5 rounded">piecemint/backend/plugins/my_plugin/</code>.
-          Two files are required:
+          Typical pieces:
         </p>
         <ul className="list-disc pl-6 space-y-2 text-ink-black/80">
           <li>
-            <strong>manifest.yaml</strong> — metadata: <code className="text-xs">name</code>,{' '}
-            <code className="text-xs">description</code>, <code className="text-xs">version</code>; optional <code className="text-xs">icon</code> for a
-            logo file in this folder (svg, png, webp, jpeg, gif, or ico).
+            <strong>manifest.yaml</strong> — required for discovery. Metadata: <code className="text-xs">name</code>,{' '}
+            <code className="text-xs">description</code>, <code className="text-xs">version</code>; optional{' '}
+            <code className="text-xs">icon</code> for a logo file in this folder (svg, png, webp, jpeg, gif, or ico).
           </li>
           <li>
-            <strong>logic.py</strong> — Python module that defines a FastAPI{' '}
-            <code className="text-xs">router</code> your routes attach to.
+            <strong>logic.py</strong> — defines a FastAPI <code className="text-xs">router</code> for HTTP under{' '}
+            <code className="text-xs">/api/plugins</code>. Omit only for rare MCP-only plugins; most bundles include this file.
+          </li>
+          <li>
+            <strong>mcp_extras.py</strong> (optional) — extends the Piecemint MCP server; see section 6.
           </li>
         </ul>
       </section>
@@ -115,9 +118,34 @@ def hello():
         </p>
       </section>
 
+      <section className="space-y-4">
+        <h2 className="text-xl font-medium tracking-tight">6. Optional: Piecemint MCP (<code className="text-base">mcp_extras.py</code>)</h2>
+        <p className="text-ink-black/80">
+          <code className="text-xs bg-ink-black/5 px-1 rounded">piecemint/backend/mcp_server.py</code> loads optional{' '}
+          <code className="text-xs">plugins/&lt;id&gt;/mcp_extras.py</code> after built-in tools. The module must define{' '}
+          <code className="text-xs">register_mcp(mcp)</code> and use the same <code className="text-xs">manifest.yaml</code> gate as
+          HTTP plugins. Folders under <code className="text-xs">disabled_plugins/</code> are ignored. Restart the MCP host after
+          changes. The <code className="text-xs">email_and_invoice_capabilities</code> tool reports{' '}
+          <code className="text-xs">plugin_mcp_extras_loaded</code> for debugging.
+        </p>
+        <pre className="text-sm bg-ink-black/5 p-4 rounded-[20px] overflow-x-auto border border-ink-black/10">
+{`# plugins/my_plugin/mcp_extras.py
+
+def register_mcp(mcp) -> None:
+    @mcp.tool()
+    def my_plugin_status() -> str:
+        return '{"ok": true, "plugin": "my_plugin"}'`}
+        </pre>
+        <p className="text-ink-black/70 text-sm">
+          Same import rules as <code className="text-xs">logic.py</code>; run MCP from <code className="text-xs">piecemint/backend</code>. For
+          database access, copy ORM field values while the SQLAlchemy session is open before returning from a tool handler.
+        </p>
+      </section>
+
       <p className="text-sm text-ink-black/55">
         Reference: see existing plugins under <code className="text-xs">backend/plugins/</code> in this repository for
-        full examples (e.g. tax calculator, invoice generator).
+        full examples (e.g. tax calculator, invoice generator). In Piecemint open <strong>Plugin library → How to build a plugin</strong>{' '}
+        for the in-app mirror of this guide.
       </p>
     </div>
   );

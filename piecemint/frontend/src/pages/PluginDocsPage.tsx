@@ -29,18 +29,22 @@ export default function PluginDocsPage() {
         <p className="text-ink-black/80">
           Each plugin is a directory next to the backend code, for example{' '}
           <code className="text-sm bg-ink-black/5 px-1.5 py-0.5 rounded">piecemint/backend/plugins/my_plugin/</code>.
-          Two files are required:
+          Typical pieces:
         </p>
         <ul className="list-disc pl-6 space-y-2 text-ink-black/80">
           <li>
-            <strong>manifest.yaml</strong> — metadata: <code className="text-xs">name</code>,{' '}
+            <strong>manifest.yaml</strong> — required for discovery. Metadata: <code className="text-xs">name</code>,{' '}
             <code className="text-xs">description</code>, <code className="text-xs">version</code>, and optional{' '}
-            <code className="text-xs">icon</code> (path to an image under the plugin folder; shown in the app sidebar, plugin
-            library, global search, and on this marketplace site).
+            <code className="text-xs">icon</code> (path to an image under the plugin folder; shown in the app sidebar,
+            plugin library, global search, and on the marketplace site).
           </li>
           <li>
-            <strong>logic.py</strong> — Python module that defines a FastAPI{' '}
-            <code className="text-xs">router</code> your routes attach to.
+            <strong>logic.py</strong> — defines a FastAPI <code className="text-xs">router</code> for HTTP routes under{' '}
+            <code className="text-xs">/api/plugins</code>. Skip only if the plugin is MCP-only (unusual); most plugins
+            include this file.
+          </li>
+          <li>
+            <strong>mcp_extras.py</strong> (optional) — extends the Piecemint MCP server with extra tools; see section 6.
           </li>
         </ul>
       </section>
@@ -96,6 +100,36 @@ def hello():
           a generated or pasted <code className="text-xs">manifest.yaml</code> into <code className="text-xs">plugins/&lt;id&gt;/</code> on
           the machine running the API. For production, set <code className="text-xs">FF_DISABLE_PLUGIN_UPLOAD=1</code> on the server
           to disable this. Always restart the API after installing.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-medium">6. Optional: Piecemint MCP (<code className="text-base">mcp_extras.py</code>)</h2>
+        <p className="text-ink-black/80">
+          The stdio MCP entrypoint <code className="text-xs bg-ink-black/5 px-1 rounded">piecemint/backend/mcp_server.py</code>{' '}
+          loads built-in tools, then calls <code className="text-xs bg-ink-black/5 px-1 rounded">PluginManager.apply_mcp_extras(mcp)</code>.
+          For each enabled plugin under <code className="text-xs">plugins/</code> that has a{' '}
+          <code className="text-xs">manifest.yaml</code>, if <code className="text-xs">mcp_extras.py</code> exists and defines a
+          callable <code className="text-xs">register_mcp(mcp)</code>, that function runs to register additional tools (e.g.{' '}
+          <code className="text-xs">@mcp.tool()</code>). Plugins in <code className="text-xs">disabled_plugins/</code> are not
+          scanned. Restart the MCP process after adding or changing <code className="text-xs">mcp_extras.py</code>. Use the
+          built-in tool <code className="text-xs">email_and_invoice_capabilities</code> to see which plugin extras loaded (
+          <code className="text-xs">plugin_mcp_extras_loaded</code>).
+        </p>
+        <pre className="text-sm bg-ink-black/5 p-4 rounded-2xl overflow-x-auto border border-ink-black/10">
+{`# plugins/my_plugin/mcp_extras.py
+
+def register_mcp(mcp) -> None:
+    @mcp.tool()
+    def my_plugin_status() -> str:
+        return '{"ok": true, "plugin": "my_plugin"}'`}
+        </pre>
+        <p className="text-ink-black/70 text-sm">
+          Import shared code the same way as in <code className="text-xs">logic.py</code> (e.g.{' '}
+          <code className="text-xs">from api.database import SessionLocal</code>) with the working directory set to{' '}
+          <code className="text-xs">piecemint/backend</code>. For SQLAlchemy rows, read attributes while the session is open,
+          then close the session before long-running work—same pattern as core{' '}
+          <code className="text-xs">send_invoice_email</code>.
         </p>
       </section>
 

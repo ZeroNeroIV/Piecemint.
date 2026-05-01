@@ -4,4 +4,4 @@
 
 ## Overview
 
-- Static/developer-oriented copy for how plugins integrate with Piecemint.
+- Route **`/docs/plugins`**: static copy for plugin layout (**`manifest.yaml`**, **`logic.py`**, optional **`mcp_extras.py`**), REST prefix **`/api/plugins`**, UI enablement, uploads, and Piecemint MCP **`register_mcp`** extension point.

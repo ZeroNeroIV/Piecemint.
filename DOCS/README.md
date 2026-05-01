@@ -15,7 +15,7 @@ Generated and hand-written documentation for this monorepo.
 
 ## Marketplace (`marketplace/`)
 
-There is no mirrored doc tree under **`DOCS/`** yet for the marketplace app. See **`marketplace/frontend`** and **`marketplace/backend`** in the repo.
+There is no mirrored doc tree under **`DOCS/`** for the marketplace app. The public **Build your own plugin** guide lives in **`marketplace/frontend/src/ForDevelopers.tsx`** (aligned with Piecemint’s in-app **`piecemint/frontend/src/pages/PluginDocsPage.tsx`** at **`/docs/plugins`**).
 
 ## Root scripts
 

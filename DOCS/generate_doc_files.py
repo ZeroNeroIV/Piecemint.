@@ -66,6 +66,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
         [
             "Defines API shapes: **`Client`**, **`Supplier`**, **`Transaction`**, **`Stockholder`**, plus **`*Create`** bodies where applicable.",
             "**`WorkspaceSummary`**: `id` + `name` for `GET /api/core/workspace`.",
+            "**`EmailNotificationTestBody`**: JSON body for **`POST /api/plugins/email_notifications/test`** (declared here so Pydantic resolves correctly when `email_notifications` is loaded as a dynamic plugin).",
             "Used for response validation and OpenAPI schema in `core_routes.py`.",
         ],
     ),
@@ -89,18 +90,21 @@ SPECS: dict[str, tuple[str, list[str]]] = {
     "backend/plugin_manager.py": (
         "Dynamic plugin discovery and registration",
         [
-            "Scans **`plugins/`** for subfolders containing **`manifest.yaml`** and **`logic.py`**.",
-            "Loads each `logic` module and collects **`router`** objects; registers them on the app with prefix **`/api/plugins`**.",
-            "**`get_installed_plugins()`** re-reads the filesystem for the marketplace UI; **`get_available_plugins()`** lists folders under **`disabled_plugins/`**.",
-            "Note: moving a plugin only updates routes after the app process reloads; the plugin **list** can update without restart.",
+            "Scans **`plugins/`** for subfolders with **`manifest.yaml`**.",
+            "For each plugin with **`logic.py`**, loads the module and collects **`router`** objects; registers them on the app under prefix **`/api/plugins`**.",
+            "**`apply_mcp_extras(mcp)`** loads optional **`mcp_extras.py`** (same manifest-gated folders) and calls **`register_mcp(mcp)`** if present; failures are logged per plugin. Used by **`mcp_server.py`** only (not FastAPI startup).",
+            "**`get_installed_plugins()`** re-reads the filesystem for the marketplace UI; **`get_available_plugins()`** lists folders under **`disabled_plugins/`** (MCP extras are not loaded from disabled plugins).",
+            "Note: moving a plugin only updates HTTP routes after the app process reloads; the plugin **list** can update without restart.",
         ],
     ),
     "backend/mcp_server.py": (
         "MCP (Model Context Protocol) stdio server",
         [
-            "Uses **`mcp.server.fastmcp.FastMCP`** with **`mcp.run()`** (stdio transport) for Cursor/Claude Desktop style hosts.",
-            "Shares the same SQLite file as the FastAPI app via **`api.database`**.",
-            "Tools scope to **`primary_org_fk`**: **`get_clients`**, **`get_stockholders`**, **`add_stockholder`**, **`list_transactions`**, **`send_email`**, **`send_invoice_email`**.",
+            "Uses **`mcp.server.fastmcp.FastMCP`** with **`mcp.run()`** (stdio transport) for Cursor/OpenCode/Claude Desktop style hosts.",
+            "Shares the same SQLite file as the FastAPI app via **`api.database`** (run from **`piecemint/backend`** so paths match).",
+            "Core tools (workspace via **`primary_org_fk`**): **`get_clients`**, **`get_stockholders`**, **`add_stockholder`**, **`list_transactions`**, **`email_and_invoice_capabilities`**, **`send_email`**, **`send_invoice_email`** (invoice helpers load only if **`invoice_gen`** is present).",
+            "**`send_invoice_email`** reads ORM **`Client`** fields inside the DB session before calling **`render_invoice`** (avoids **`DetachedInstanceError`** after **`session_scope()`** exits).",
+            "**`PluginManager().apply_mcp_extras(mcp)`** runs after builtins; optional per-plugin **`mcp_extras.py`** implementations populate **`plugin_mcp_extras_loaded`** in **`email_and_invoice_capabilities`**.",
             "Entry: `pipenv run python mcp_server.py` from `piecemint/backend`.",
         ],
     ),
@@ -403,7 +407,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
     "frontend/src/pages/PluginDocsPage.tsx": (
         "In-app plugin documentation",
         [
-            "Static/developer-oriented copy for how plugins integrate with Piecemint.",
+            "Route **`/docs/plugins`**: static copy for plugin layout (**`manifest.yaml`**, **`logic.py`**, optional **`mcp_extras.py`**), REST prefix **`/api/plugins`**, UI enablement, uploads, and Piecemint MCP **`register_mcp`** extension point.",
         ],
     ),
     "frontend/src/pages/PluginPage.tsx": (
