@@ -7,8 +7,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from api.deps import DbSession, TenantId
-from api.tenant_data import get_tenant_data
+from api.deps import DbSession, WorkspaceScopeId
+from api.workspace_data import get_workspace_data
 
 # Load backend/.env so GOOGLE_API_KEY / GEMINI_API_KEY are available in dev
 try:
@@ -168,8 +168,8 @@ def _coerce_id_map(d: Any) -> dict[str, str]:
 
 
 @router.get("/expense_categorizer/search")
-def search_expenses(query: str, db: DbSession, tenant_id: TenantId):
-    data = get_tenant_data(db, tenant_id)
+def search_expenses(query: str, db: DbSession, org_row_id: WorkspaceScopeId):
+    data = get_workspace_data(db, org_row_id)
     transactions = data["transactions"]
 
     query = query.lower()

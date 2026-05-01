@@ -1,11 +1,10 @@
 """
 Piecemint MCP server — stdio transport, shares the same SQLite DB as FastAPI.
-  
+
 Run (from repo / Cursor MCP config):
   cd piecemint/backend && pipenv run python mcp_server.py
 
-Tools scope to the single built-in org; the `tenant` argument accepts id, legacy ids
-(tenant_a, tenant_b), or the org display name.
+Tools scope to this deployment's single workspace (one org row); no tenant selection.
 """
 
 from __future__ import annotations
@@ -27,7 +26,7 @@ from api import db_models
 from api.database import SessionLocal, init_db
 from api.seed import ensure_seed_data
 from api.smtp_outbound import SmtpSendError, send_email_with_attachments, send_plain_email, smtp_is_configured
-from api.tenant_query import resolve_tenant_id
+from api.workspace_data import primary_org_fk
 
 _INVOICE_GEN = os.path.join(_BACKEND_ROOT, "plugins", "invoice_gen")
 if _INVOICE_GEN not in sys.path:
@@ -45,7 +44,11 @@ finally:
 
 mcp = FastMCP(
     "Piecemint",
-    instructions="Read and modify Piecemint data (single org). list_tenants returns the org id and name. Tool `tenant` args accept id, legacy names, or org display name. Email: send_email (plain text) and send_invoice_email (PDF/XLSX/DOCX attachment) use the same SMTP as the app (Email notifications / FF_SMTP_*).",
+    instructions=(
+        "Read and modify Piecemint data for one self-hosted workspace. "
+        "Email tools: send_email (plain text) and send_invoice_email (attachment) "
+        "use SMTP from Email notifications in the app or FF_SMTP_* on the API host."
+    ),
 )
 
 
@@ -63,21 +66,12 @@ def session_scope() -> Session:
 
 
 @mcp.tool()
-def list_tenants() -> str:
-    """List all tenant ids and display names in the database."""
+def get_clients() -> str:
+    """List clients in the workspace."""
     with session_scope() as db:
-        rows = db.query(db_models.Tenant).order_by(db_models.Tenant.id).all()
-        data = [{"id": t.id, "name": t.name} for t in rows]
-    return json.dumps(data, indent=2)
-
-
-@mcp.tool()
-def get_clients(tenant: str) -> str:
-    """List clients. `tenant` may be org id, legacy id (tenant_a / tenant_b), or display name."""
-    with session_scope() as db:
-        tid = resolve_tenant_id(db, tenant)
+        tid = primary_org_fk(db)
         if not tid:
-            return json.dumps({"error": f"Unknown tenant: {tenant!r}"})
+            return json.dumps({"error": "No workspace org row — seed or migrate the database."})
         clients = (
             db.query(db_models.Client)
             .filter(db_models.Client.tenant_id == tid)
@@ -97,12 +91,12 @@ def get_clients(tenant: str) -> str:
 
 
 @mcp.tool()
-def get_stockholders(tenant: str) -> str:
-    """List stockholders for a tenant (by id or name)."""
+def get_stockholders() -> str:
+    """List stockholders."""
     with session_scope() as db:
-        tid = resolve_tenant_id(db, tenant)
+        tid = primary_org_fk(db)
         if not tid:
-            return json.dumps({"error": f"Unknown tenant: {tenant!r}"})
+            return json.dumps({"error": "No workspace org row — seed or migrate the database."})
         rows = (
             db.query(db_models.Stockholder)
             .filter(db_models.Stockholder.tenant_id == tid)
@@ -124,21 +118,16 @@ def get_stockholders(tenant: str) -> str:
 
 @mcp.tool()
 def add_stockholder(
-    tenant: str,
     name: str,
     email: str = "",
     share_percent: float | None = None,
     notes: str = "",
 ) -> str:
-    """
-    Add a stockholder to a tenant. Example: add_stockholder(
-        tenant='Acme Corp', name='Alex Founder', email='alex@example.com', share_percent=5.0
-    )
-    """
+    """Add a stockholder. Example: add_stockholder(name='Alex Founder', email='alex@example.com', share_percent=5.0)"""
     with session_scope() as db:
-        tid = resolve_tenant_id(db, tenant)
+        tid = primary_org_fk(db)
         if not tid:
-            return json.dumps({"ok": False, "error": f"Unknown tenant: {tenant!r}"})
+            return json.dumps({"ok": False, "error": "No workspace org row."})
         sh = db_models.Stockholder(
             tenant_id=tid,
             name=name,
@@ -150,7 +139,7 @@ def add_stockholder(
         db.flush()
         row = {
             "id": sh.id,
-            "tenant_id": tid,
+            "workspace_org_id": tid,
             "name": sh.name,
             "email": sh.email,
             "share_percent": float(sh.share_percent) if sh.share_percent is not None else None,
@@ -159,12 +148,12 @@ def add_stockholder(
 
 
 @mcp.tool()
-def list_transactions(tenant: str, limit: int = 50) -> str:
-    """Recent transactions for a tenant (by id or name)."""
+def list_transactions(limit: int = 50) -> str:
+    """Recent transactions."""
     with session_scope() as db:
-        tid = resolve_tenant_id(db, tenant)
+        tid = primary_org_fk(db)
         if not tid:
-            return json.dumps({"error": f"Unknown tenant: {tenant!r}"})
+            return json.dumps({"error": "No workspace org row — seed or migrate the database."})
         rows = (
             db.query(db_models.Transaction)
             .filter(db_models.Transaction.tenant_id == tid)
@@ -192,15 +181,15 @@ def _split_recipients(to_field: str) -> list[str]:
 
 
 @mcp.tool()
-def send_email(tenant: str, to: str, subject: str, text_body: str) -> str:
+def send_email(to: str, subject: str, text_body: str) -> str:
     """
     Send a plain-text email using the same SMTP settings as the app (Email notifications plugin or FF_SMTP_*).
     `to` may be a single address or comma/semicolon-separated list.
     """
     with session_scope() as db:
-        tid = resolve_tenant_id(db, tenant)
+        tid = primary_org_fk(db)
         if not tid:
-            return json.dumps({"ok": False, "error": f"Unknown tenant: {tenant!r}"})
+            return json.dumps({"ok": False, "error": "No workspace org row."})
     addrs = _split_recipients(to)
     if not addrs:
         return json.dumps({"ok": False, "error": "No recipient addresses in `to`."})
@@ -220,7 +209,6 @@ def send_email(tenant: str, to: str, subject: str, text_body: str) -> str:
 
 @mcp.tool()
 def send_invoice_email(
-    tenant: str,
     client_id: str,
     to: str | None = None,
     subject: str | None = None,
@@ -234,9 +222,9 @@ def send_invoice_email(
     if omitted, uses default export settings (same as legacy GET /invoice_gen/generate/:id).
     """
     with session_scope() as db:
-        tid = resolve_tenant_id(db, tenant)
+        tid = primary_org_fk(db)
         if not tid:
-            return json.dumps({"ok": False, "error": f"Unknown tenant: {tenant!r}"})
+            return json.dumps({"ok": False, "error": "No workspace org row."})
         c = (
             db.query(db_models.Client)
             .filter(

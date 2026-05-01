@@ -1,6 +1,6 @@
 /**
- * Single-organization app: storage keys have no per-tenant suffix.
- * If data exists only under legacy `*_tenant_a` or `*_tenant_b` keys, copy once to the new key.
+ * Single-workspace app: browser storage keys are not scoped by workspace id.
+ * If data exists only under legacy `*_tenant_a` or `*_tenant_b` keys from older builds, migrate once.
  */
 const LEGACY_A = '_tenant_a';
 const LEGACY_B = '_tenant_b';

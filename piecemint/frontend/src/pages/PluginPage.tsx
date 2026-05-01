@@ -51,7 +51,7 @@ export default function PluginPage() {
           <code className="bg-ink-black/5 px-1.5 py-0.5 rounded text-sm">{pluginId}</code> is
           not installed for this environment, or the list is out of date.
         </p>
-        <Link to="/marketplace" className="pill-button inline-block no-underline">
+        <Link to="/library" className="pill-button inline-block no-underline">
           Open plugin library
         </Link>
       </div>
@@ -79,7 +79,7 @@ export default function PluginPage() {
             hasIcon={meta.has_icon}
           />
         </div>
-        <Link to="/marketplace" className="text-sm font-medium text-signal-orange underline underline-offset-2">
+        <Link to="/library" className="text-sm font-medium text-signal-orange underline underline-offset-2">
           Manage all plugins
         </Link>
       </div>

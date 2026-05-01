@@ -3,7 +3,7 @@ import { BookOpen, LayoutDashboard } from 'lucide-react';
 import { MAIN_APP_URL } from './lib/urls';
 
 export default function ForDevelopers() {
-  const appPluginsUrl = `${MAIN_APP_URL}/marketplace`;
+  const appPluginsUrl = `${MAIN_APP_URL}/library`;
 
   return (
     <div className="space-y-12 max-w-3xl pb-16 pt-12">

@@ -8,6 +8,6 @@
 
 - Shares the same SQLite file as the FastAPI app via **`api.database`**.
 
-- Tools: **`list_tenants`**, **`get_clients`**, **`get_stockholders`**, **`add_stockholder`**, **`list_transactions`**—resolve tenant by id or name.
+- Tools scope to **`primary_org_fk`**: **`get_clients`**, **`get_stockholders`**, **`add_stockholder`**, **`list_transactions`**, **`send_email`**, **`send_invoice_email`**.
 
 - Entry: `pipenv run python mcp_server.py` from `piecemint/backend`.

@@ -11,7 +11,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from api import db_models
-from api.deps import DbSession, TenantId
+from api.deps import DbSession, WorkspaceScopeId
 from api.smtp_outbound import SmtpSendError, send_email_with_attachments, smtp_is_configured
 
 from builders import render_invoice
@@ -20,12 +20,12 @@ from schemas import InvoiceExportConfig
 router = APIRouter()
 
 
-def _get_client(db: Session, client_id: str, tenant_id: str) -> db_models.Client | None:
+def _get_client(db: Session, client_id: str, org_row_id: str) -> db_models.Client | None:
     return (
         db.query(db_models.Client)
         .filter(
             db_models.Client.id == client_id,
-            db_models.Client.tenant_id == tenant_id,
+            db_models.Client.tenant_id == org_row_id,
         )
         .first()
     )
@@ -49,9 +49,9 @@ def _invoice_response(c: db_models.Client, cfg: InvoiceExportConfig) -> Response
 
 
 @router.get("/invoice_gen/generate/{client_id}")
-def generate_invoice_get(client_id: str, db: DbSession, tenant_id: TenantId):
+def generate_invoice_get(client_id: str, db: DbSession, org_row_id: WorkspaceScopeId):
     """Legacy GET: PDF with default styling (same as empty config)."""
-    c = _get_client(db, client_id, tenant_id)
+    c = _get_client(db, client_id, org_row_id)
     if not c:
         raise HTTPException(status_code=404, detail="Client not found")
     return _invoice_response(c, InvoiceExportConfig())
@@ -61,10 +61,10 @@ def generate_invoice_get(client_id: str, db: DbSession, tenant_id: TenantId):
 def generate_invoice_post(
     client_id: str,
     db: DbSession,
-    tenant_id: TenantId,
+    org_row_id: WorkspaceScopeId,
     config: InvoiceExportConfig = Body(...),
 ):
-    c = _get_client(db, client_id, tenant_id)
+    c = _get_client(db, client_id, org_row_id)
     if not c:
         raise HTTPException(status_code=404, detail="Client not found")
     return _invoice_response(c, config)
@@ -81,11 +81,11 @@ class InvoiceEmailRequest(BaseModel):
 def email_invoice_post(
     client_id: str,
     db: DbSession,
-    tenant_id: TenantId,
+    org_row_id: WorkspaceScopeId,
     req: InvoiceEmailRequest,
 ):
     """Send the rendered invoice as an attachment via SMTP (same settings as Email notifications)."""
-    c = _get_client(db, client_id, tenant_id)
+    c = _get_client(db, client_id, org_row_id)
     if not c:
         raise HTTPException(status_code=404, detail="Client not found")
 
@@ -96,7 +96,7 @@ def email_invoice_post(
             detail="No recipient email: add an email on the client or pass `to` in the request body.",
         )
 
-    if not smtp_is_configured(tenant_id):
+    if not smtp_is_configured(org_row_id):
         raise HTTPException(
             status_code=503,
             detail="SMTP is not configured. Open the Email notifications plugin and save mail settings, "
@@ -127,7 +127,7 @@ def email_invoice_post(
 
     try:
         send_email_with_attachments(
-            tenant_id,
+            org_row_id,
             [to_addr],
             subj,
             text_body,

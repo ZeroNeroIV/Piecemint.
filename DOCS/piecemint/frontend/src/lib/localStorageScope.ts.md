@@ -4,4 +4,4 @@
 
 ## Overview
 
-- Avoids collisions for multi-tenant or multi-tab scoping.
+- Migrates legacy localStorage key suffixes; single-workspace deployments use unprefixed keys.

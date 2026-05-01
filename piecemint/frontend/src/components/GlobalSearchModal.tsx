@@ -90,7 +90,7 @@ const CORE_ITEMS: CoreEntry[] = [
     Icon: Zap,
   },
   {
-    to: '/marketplace',
+    to: '/library',
     title: 'Plugin library',
     subtitle: 'Install and enable extensions',
     section: 'Pages',

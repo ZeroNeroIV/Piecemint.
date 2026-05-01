@@ -4,4 +4,4 @@
 
 ## Overview
 
-- Persists per-tenant SMTP settings and exposes endpoints under **`/api/plugins/email_notifications/...`**.
+- Persists app-saved SMTP settings (keyed by org FK) and exposes **`/api/plugins/email_notifications/...`**.

@@ -6,7 +6,7 @@ export default function PluginDocsPage() {
     <div className="w-full max-w-5xl space-y-10 pb-16">
       <header>
         <Link
-          to="/marketplace"
+          to="/library"
           className="inline-flex items-center gap-2 text-sm font-medium text-signal-orange hover:underline underline-offset-2 mb-6"
         >
           <ArrowLeft size={16} aria-hidden />

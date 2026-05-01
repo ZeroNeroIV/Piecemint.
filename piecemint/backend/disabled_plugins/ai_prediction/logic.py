@@ -4,8 +4,8 @@ from datetime import datetime
 import pandas as pd
 from fastapi import APIRouter
 
-from api.deps import DbSession, TenantId
-from api.tenant_data import get_tenant_data
+from api.deps import DbSession, WorkspaceScopeId
+from api.workspace_data import get_workspace_data
 
 router = APIRouter()
 
@@ -19,8 +19,8 @@ def add_months(sourcedate, months):
 
 
 @router.get("/ai_prediction/forecast")
-def forecast_cashflow(db: DbSession, tenant_id: TenantId):
-    data = get_tenant_data(db, tenant_id)
+def forecast_cashflow(db: DbSession, org_row_id: WorkspaceScopeId):
+    data = get_workspace_data(db, org_row_id)
     transactions = data["transactions"]
     if not transactions:
         return {"forecast": []}

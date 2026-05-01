@@ -4,13 +4,13 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from api.database import get_db
-from api.tenant_scope import DEFAULT_TENANT_ID
+from api.workspace_scope import PRIMARY_WORKSPACE_ROW_ID
 
 
-def get_tenant_id() -> str:
-    """Piecemint is single-organization; always scope to the default org."""
-    return DEFAULT_TENANT_ID
+def get_workspace_scope_id() -> str:
+    """Piecemint is single-workspace (self-hosted); scope to the primary org row FK."""
+    return PRIMARY_WORKSPACE_ROW_ID
 
 
-TenantId = Annotated[str, Depends(get_tenant_id)]
+WorkspaceScopeId = Annotated[str, Depends(get_workspace_scope_id)]
 DbSession = Annotated[Session, Depends(get_db)]

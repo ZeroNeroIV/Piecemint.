@@ -220,7 +220,7 @@ function SidebarExpandedContent({
       >
         Library
       </p>
-      <NavLink to="/marketplace" className={linkCls} style={next()} onClick={onCollapse}>
+      <NavLink to="/library" className={linkCls} style={next()} onClick={onCollapse}>
         <Puzzle size={20} strokeWidth={1.75} aria-hidden className="shrink-0" />
         Plugin library
       </NavLink>
@@ -317,7 +317,7 @@ export default function AppLayout() {
       ...coreNav.map((n) => ({ ...n, kind: 'core' as const })),
       ...pluginNav.map((n) => ({ ...n, kind: 'plugin' as const, end: false, icon: Plug })),
       {
-        to: '/marketplace',
+        to: '/library',
         label: 'Plugin library',
         icon: Puzzle,
         end: false,
@@ -553,7 +553,7 @@ export default function AppLayout() {
                 <div className="h-2 shrink-0" aria-hidden />
 
                 <SidebarItemTooltip label="Plugin library" active={showTooltips}>
-                  <NavLink to="/marketplace" className={railLinkClass} onClick={requestSidebarCollapse}>
+                  <NavLink to="/library" className={railLinkClass} onClick={requestSidebarCollapse}>
                     <Puzzle size={20} strokeWidth={1.75} aria-hidden className="shrink-0" />
                     <span className="sr-only">Plugin library</span>
                   </NavLink>

@@ -10,6 +10,8 @@ def _id() -> str:
 
 
 class Tenant(Base):
+    """Org/workspace row for a single Piecemint deployment (SQLite table name unchanged: `tenants`)."""
+
     __tablename__ = "tenants"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)

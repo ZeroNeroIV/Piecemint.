@@ -4,4 +4,4 @@
 
 ## Overview
 
-- CRUD-style routes for cap table / stockholder rows scoped to the tenant.
+- Reserved plugin router; UI uses core **`/api/core/stockholders`** routes.

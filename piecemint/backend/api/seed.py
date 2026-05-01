@@ -1,5 +1,5 @@
 """
-Database seeding: demo data for all finance tables (tenants, clients, suppliers, transactions, stockholders).
+Database seeding: demo data (org row + clients, suppliers, transactions, stockholders).
 
 * On API startup, `ensure_seed_data` runs once if the DB is empty.
 * For a full reseed: `cd piecemint/backend && pipenv run python -m api.seed --force` (wipes and repopulates).
@@ -32,7 +32,7 @@ def populate_mock_data(db: Session) -> None:
 
 
 def ensure_seed_data(db: Session) -> None:
-    """Idempotent: only inserts when the tenants table is empty."""
+    """Idempotent: only inserts when the org/workspace table (`tenants`) is empty."""
     if db.query(db_models.Tenant).first() is not None:
         return
     populate_mock_data(db)
@@ -64,7 +64,7 @@ def _cli() -> None:
         else:
             ensure_seed_data(db)
             if db.query(db_models.Tenant).count() == 0:
-                print("No seed applied (tenants still empty).", file=sys.stderr)
+                print("No seed applied (org table still empty).", file=sys.stderr)
             else:
                 n = (
                     db.query(db_models.Tenant).count()

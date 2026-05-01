@@ -6,6 +6,6 @@
 
 - **`ensure_seed_data(db)`** runs only when the `tenants` table is empty.
 
-- Inserts `tenant_a` (Acme Corp) and `tenant_b` (Stark Industries) with sample clients, suppliers, transactions, and one stockholder for tenant A.
+- Inserts one org row and sample clients, suppliers, transactions, and stockholders for the default demo workspace.
 
 - Called from **`api/main.py`** lifespan at startup so demos work without manual SQL.

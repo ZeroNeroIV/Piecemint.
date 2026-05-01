@@ -10,7 +10,7 @@ type Status = {
   user_set: boolean;
   from_address: string | null;
   use_tls: boolean;
-  source?: 'tenant' | 'env';
+  source?: 'saved' | 'env';
 };
 
 type Config = {
@@ -20,7 +20,7 @@ type Config = {
   from_address: string | null;
   use_tls: boolean;
   has_password: boolean;
-  source: 'tenant' | 'env';
+  source: 'saved' | 'env';
 };
 
 export default function EmailNotificationsPanel() {
@@ -31,7 +31,7 @@ export default function EmailNotificationsPanel() {
   const [fromAddress, setFromAddress] = useState('');
   const [useTls, setUseTls] = useState(true);
   const [password, setPassword] = useState('');
-  const [configSource, setConfigSource] = useState<'tenant' | 'env' | null>(null);
+  const [configSource, setConfigSource] = useState<'saved' | 'env' | null>(null);
   const [to, setTo] = useState('');
   const [busy, setBusy] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
@@ -201,7 +201,7 @@ export default function EmailNotificationsPanel() {
             {status.configured ? (
               <p>
                 <strong>Ready to send.</strong>{' '}
-                {effectiveSource === 'tenant' ? 'Using saved app settings' : 'Using environment defaults'}
+                {effectiveSource === 'saved' ? 'Using saved app settings' : 'Using environment defaults'}
                 {status.host ? (
                   <>
                     : {status.host}:{status.port} {status.use_tls ? '(STARTTLS)' : '(plain)'} · from{' '}
@@ -270,13 +270,13 @@ export default function EmailNotificationsPanel() {
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
               placeholder={
-                status?.configured || configSource === 'tenant'
+                status?.configured || configSource === 'saved'
                   ? 'Leave blank to keep the current password'
                   : 'App password or SMTP password'
               }
             />
             <span className="text-xs text-ink-black/50 mt-1 block">
-              {configSource === 'tenant' || (status?.source === 'tenant')
+              {configSource === 'saved' || status?.source === 'saved'
                 ? 'Leave blank when saving to keep the existing password.'
                 : 'Required to save unless FF_SMTP_PASSWORD is set on the server.'}
             </span>
@@ -302,7 +302,7 @@ export default function EmailNotificationsPanel() {
             <Save size={16} aria-hidden />
             {saveBusy ? 'Saving…' : 'Save SMTP settings'}
           </button>
-          {effectiveSource === 'tenant' && (
+          {effectiveSource === 'saved' && (
             <button
               type="button"
               onClick={() => void clearSaved()}

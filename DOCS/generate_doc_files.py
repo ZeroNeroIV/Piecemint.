@@ -26,11 +26,11 @@ SPECS: dict[str, tuple[str, list[str]]] = {
         ],
     ),
     "backend/api/core_routes.py": (
-        "Core REST API (tenant-scoped)",
+        "Core REST API (single workspace)",
         [
             "Router prefix: `/api/core`.",
-            "Uses **`DbSession`** and **`TenantId`** dependencies: data is filtered by `X-Tenant-ID` for every tenant-bound row.",
-            "`GET /tenants` lists all tenants (no tenant header required) for discovery/admin.",
+            "Uses **`DbSession`** and **`WorkspaceScopeId`**: all rows are scoped to the primary org FK (self-hosted; no header pickers).",
+            "`GET /workspace` returns the org row id and display name.",
             "Exposes CRUD-style routes for **clients**, **suppliers**, **transactions**, and **stockholders** against SQLAlchemy models.",
             "Returns Pydantic models from `api/models.py` for OpenAPI-friendly responses.",
         ],
@@ -45,19 +45,19 @@ SPECS: dict[str, tuple[str, list[str]]] = {
         ],
     ),
     "backend/api/db_models.py": (
-        "ORM models: multi-tenant tables",
+        "ORM models: org row + finance tables",
         [
-            "**`Tenant`**: master row (`id`, `name`). Other tables reference `tenant_id` with `ForeignKey` + cascade delete.",
-            "**`Client`**, **`Supplier`**, **`Transaction`**, **`Stockholder`**: each includes `tenant_id` and business fields matching the API/seed data.",
+            "**`Tenant`**: org/workspace master row (`tenants.id`). Child tables use FK column `tenant_id` (name unchanged for DB compatibility).",
+            "**`Client`**, **`Supplier`**, **`Transaction`**, **`Stockholder`**: scoped by that FK with business fields matching the API/seed data.",
             "**`Transaction`**: stores `date` / `last_activity` as strings (ISO dates) for simple JSON alignment with the frontend.",
             "Uses SQLAlchemy 2.0 `Mapped[]` / `mapped_column` style.",
         ],
     ),
     "backend/api/deps.py": (
-        "FastAPI dependencies: DB session and tenant header",
+        "FastAPI dependencies: DB session and workspace scope",
         [
-            "**`get_tenant_id`**: reads **`X-Tenant-ID`**; returns 400 if missing or blank.",
-            "**`TenantId`**: `Annotated[str, Depends(get_tenant_id)]` for concise route parameters.",
+            "**`get_workspace_scope_id`**: returns the primary org FK (`PRIMARY_WORKSPACE_ROW_ID`) for this deployment.",
+            "**`WorkspaceScopeId`**: `Annotated[str, Depends(get_workspace_scope_id)]` for concise route parameters.",
             "**`DbSession`**: `Annotated[Session, Depends(get_db)]` for SQLAlchemy sessions per request.",
         ],
     ),
@@ -65,7 +65,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
         "Pydantic request/response models",
         [
             "Defines API shapes: **`Client`**, **`Supplier`**, **`Transaction`**, **`Stockholder`**, plus **`*Create`** bodies where applicable.",
-            "**`TenantInfo`**: `id` + `name` for `GET /api/core/tenants`.",
+            "**`WorkspaceSummary`**: `id` + `name` for `GET /api/core/workspace`.",
             "Used for response validation and OpenAPI schema in `core_routes.py`.",
         ],
     ),
@@ -73,23 +73,17 @@ SPECS: dict[str, tuple[str, list[str]]] = {
         "Initial data seed (idempotent)",
         [
             "**`ensure_seed_data(db)`** runs only when the `tenants` table is empty.",
-            "Inserts `tenant_a` (Acme Corp) and `tenant_b` (Stark Industries) with sample clients, suppliers, transactions, and one stockholder for tenant A.",
+            "Inserts one org row and sample clients, suppliers, transactions, and stockholders for the default demo workspace.",
             "Called from **`api/main.py`** lifespan at startup so demos work without manual SQL.",
         ],
     ),
-    "backend/api/tenant_data.py": (
+    "backend/api/workspace_data.py": (
         "Read model for plugins (dict compatibility)",
         [
-            "**`ensure_tenant_row`**: creates a `Tenant` row on the fly if an unknown `tenant_id` is used (keeps old \"auto tenant\" behavior).",
-            "**`get_tenant_data(db, tenant_id)`** returns a dict with `clients`, `suppliers`, `transactions` as lists of plain dicts—same structure the original mock `DB` used.",
+            "**`ensure_org_row`**: creates a **`Tenant`** ORM row if an unknown org id is used.",
+            "**`get_workspace_data(db, org_row_id)`** returns `clients`, `suppliers`, `transactions` as plain dict lists (legacy mock `DB` shape).",
+            "**`primary_org_fk`** supports MCP callers that resolve the first org row.",
             "Imported by plugin `logic.py` files for tax, expenses, and AI without duplicating query logic.",
-        ],
-    ),
-    "backend/api/tenant_query.py": (
-        "Tenant resolution for MCP and scripts",
-        [
-            "**`resolve_tenant_id(db, tenant_id_or_name)`** finds a tenant by **primary id** (e.g. `tenant_a`) or by **case-insensitive display `name`** (e.g. `Acme Corp`).",
-            "Used by **`mcp_server.py`** so tools can accept either form from an LLM.",
         ],
     ),
     "backend/plugin_manager.py": (
@@ -106,7 +100,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
         [
             "Uses **`mcp.server.fastmcp.FastMCP`** with **`mcp.run()`** (stdio transport) for Cursor/Claude Desktop style hosts.",
             "Shares the same SQLite file as the FastAPI app via **`api.database`**.",
-            "Tools: **`list_tenants`**, **`get_clients`**, **`get_stockholders`**, **`add_stockholder`**, **`list_transactions`**—resolve tenant by id or name.",
+            "Tools scope to **`primary_org_fk`**: **`get_clients`**, **`get_stockholders`**, **`add_stockholder`**, **`list_transactions`**, **`send_email`**, **`send_invoice_email`**.",
             "Entry: `pipenv run python mcp_server.py` from `piecemint/backend`.",
         ],
     ),
@@ -129,7 +123,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
         "Plugin: tax calculator (endpoint implementation)",
         [
             "Router mounted at **`/api/plugins/tax_calculator/...`** (see `plugin_manager` prefix).",
-            "**`GET /tax_calculator/estimate`**: uses **`get_tenant_data`** to sum income transactions and apply `tax_rate` (default 0.2); returns `total_income`, `tax_rate`, `tax_reserve`.",
+            "**`GET /tax_calculator/estimate`**: uses **`get_workspace_data`** to sum income transactions and apply `tax_rate` (default 0.2); returns `total_income`, `tax_rate`, `tax_reserve`.",
         ],
     ),
     "backend/plugins/tax_calculator/manifest.yaml": (
@@ -141,8 +135,8 @@ SPECS: dict[str, tuple[str, list[str]]] = {
     "backend/plugins/invoice_gen/logic.py": (
         "Plugin: PDF invoice generation",
         [
-            "**`GET /invoice_gen/generate/{client_id}`** loads a **`Client`** for the current tenant, returns **`application/pdf`** (ReportLab canvas).",
-            "404 if the client id does not exist for that tenant.",
+            "**`GET /invoice_gen/generate/{client_id}`** loads a **`Client`** for the scoped workspace, returns **`application/pdf`** (ReportLab canvas).",
+            "404 if the client id does not exist in this workspace.",
         ],
     ),
     "backend/plugins/invoice_gen/manifest.yaml": (
@@ -155,7 +149,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
         "Plugin: keyword-based expense search",
         [
             "**`GET /expense_categorizer/search?query=...`**: filters expense transactions using simple keyword rules (e.g. \"cloud\" → AWS/Azure/Vercel).",
-            "Uses **`get_tenant_data`** for a consistent read model across tenants.",
+            "Uses **`get_workspace_data`** for a consistent finance read model.",
         ],
     ),
     "backend/plugins/expense_categorizer/manifest.yaml": (
@@ -190,10 +184,10 @@ SPECS: dict[str, tuple[str, list[str]]] = {
             "Sends mail using host/port/user/password TLS settings; used by invoice-by-email and email-notification flows.",
         ],
     ),
-    "backend/api/tenant_scope.py": (
-        "Tenant scoping helpers",
+    "backend/api/workspace_scope.py": (
+        "Workspace constants",
         [
-            "Shared utilities for resolving tenant context on ORM queries and write paths.",
+            "Defines **`PRIMARY_WORKSPACE_ROW_ID`** (FK value for child rows / SMTP store keys).",
         ],
     ),
     "backend/api/mock_finance_data.py": (
@@ -205,7 +199,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
     "backend/plugins/email_notifications/logic.py": (
         "Plugin: email notifications (API)",
         [
-            "Persists per-tenant SMTP settings and exposes endpoints under **`/api/plugins/email_notifications/...`**.",
+            "Persists app-saved SMTP settings (keyed by org FK) and exposes **`/api/plugins/email_notifications/...`**.",
         ],
     ),
     "backend/plugins/email_notifications/manifest.yaml": (
@@ -217,7 +211,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
     "backend/plugins/stockholders/logic.py": (
         "Plugin: stockholders (API)",
         [
-            "CRUD-style routes for cap table / stockholder rows scoped to the tenant.",
+            "Reserved plugin router; UI uses core **`/api/core/stockholders`** routes.",
         ],
     ),
     "backend/plugins/stockholders/manifest.yaml": (
@@ -372,7 +366,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
         "Overview dashboard page",
         [
             "Landing KPIs and charts using **`useFinanceData`**; links into analytics and activity.",
-            "Sends **`X-Tenant-ID`** on API calls via shared axios/config patterns in context.",
+            "Loads finance data via shared API client / context (implicit single workspace).",
         ],
     ),
     "frontend/src/pages/Analytics.tsx": (
@@ -614,7 +608,7 @@ SPECS: dict[str, tuple[str, list[str]]] = {
     "frontend/src/lib/localStorageScope.ts": (
         "Namespaced localStorage keys",
         [
-            "Avoids collisions for multi-tenant or multi-tab scoping.",
+            "Migrates legacy localStorage key suffixes; single-workspace deployments use unprefixed keys.",
         ],
     ),
     "frontend/src/lib/marketplaceUrl.ts": (

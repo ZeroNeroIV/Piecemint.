@@ -1,6 +1,6 @@
 """
-SMTP: configure per tenant via PUT /email_notifications/config (saved under plugins/.../data/)
-or set FF_SMTP_* on the API host (optional fallback for password when not re-saved).
+SMTP: save settings via PUT /email_notifications/config (plugins/.../data/)
+or use FF_SMTP_* on the API host (fallback for password when not re-saved).
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import re
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from api.deps import TenantId
+from api.deps import WorkspaceScopeId
 from api.smtp_outbound import (
     effective_smtp,
     env_smtp,
@@ -23,26 +23,26 @@ from api.smtp_outbound import SmtpSendError
 
 router = APIRouter()
 
-_TENANT_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+_ORG_FK_KEY_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 
 
-def _safe_tenant(tenant_id: str) -> str:
-    t = str(tenant_id).strip()
-    if not _TENANT_RE.match(t):
-        raise HTTPException(status_code=400, detail="Invalid tenant id.")
+def _sanitize_org_row_id(org_row_id: str) -> str:
+    t = str(org_row_id).strip()
+    if not _ORG_FK_KEY_RE.match(t):
+        raise HTTPException(status_code=400, detail="Invalid workspace org key.")
     return t
 
 
-def _tenant_row(tenant_id: str) -> dict | None:
-    tid = _safe_tenant(tenant_id)
+def _saved_smtp_row(org_row_id: str) -> dict | None:
+    tid = _sanitize_org_row_id(org_row_id)
     row = load_smtp_settings_store().get(tid)
     if not row or not isinstance(row, dict):
         return None
     return row
 
 
-def _is_configured_for_tenant(tenant_id: str) -> bool:
-    return smtp_is_configured(tenant_id)
+def _smtp_ready(org_row_id: str) -> bool:
+    return smtp_is_configured(org_row_id)
 
 
 class SmtpConfigOut(BaseModel):
@@ -54,7 +54,7 @@ class SmtpConfigOut(BaseModel):
     from_address: str | None = None
     use_tls: bool = True
     has_password: bool = False
-    source: str  # "tenant" | "env"
+    source: str  # "saved" | "env"
 
 
 class SmtpConfigIn(BaseModel):
@@ -74,13 +74,13 @@ class SmtpConfigIn(BaseModel):
 
 
 @router.get("/email_notifications/status")
-def email_status(tenant_id: TenantId):
-    host, port, user, _pw, f, use_tls = effective_smtp(tenant_id)
-    t = _tenant_row(tenant_id)
-    source = "tenant" if (t and (t.get("host") or "").strip()) else "env"
+def email_status(org_row_id: WorkspaceScopeId):
+    host, port, user, _pw, f, use_tls = effective_smtp(org_row_id)
+    t = _saved_smtp_row(org_row_id)
+    source = "saved" if (t and (t.get("host") or "").strip()) else "env"
     return {
-        "tenant_id": tenant_id,
-        "configured": _is_configured_for_tenant(tenant_id),
+        "workspace_id": org_row_id,
+        "configured": _smtp_ready(org_row_id),
         "host": host or None,
         "port": port,
         "user_set": bool(user),
@@ -91,9 +91,9 @@ def email_status(tenant_id: TenantId):
 
 
 @router.get("/email_notifications/config", response_model=SmtpConfigOut)
-def get_smtp_config(tenant_id: TenantId):
+def get_smtp_config(org_row_id: WorkspaceScopeId):
     env = env_smtp()
-    t = _tenant_row(tenant_id)
+    t = _saved_smtp_row(org_row_id)
     if t and (t.get("host") or "").strip():
         has_pw = bool((t.get("password") or "").strip()) or bool(env["password"])
         return SmtpConfigOut(
@@ -103,7 +103,7 @@ def get_smtp_config(tenant_id: TenantId):
             from_address=(t.get("from_address") or "").strip() or None,
             use_tls=bool(t.get("use_tls", True)),
             has_password=has_pw,
-            source="tenant",
+            source="saved",
         )
     has_pw = bool(env["password"])
     return SmtpConfigOut(
@@ -118,8 +118,8 @@ def get_smtp_config(tenant_id: TenantId):
 
 
 @router.put("/email_notifications/config")
-def put_smtp_config(tenant_id: TenantId, body: SmtpConfigIn):
-    tid = _safe_tenant(tenant_id)
+def put_smtp_config(org_row_id: WorkspaceScopeId, body: SmtpConfigIn):
+    tid = _sanitize_org_row_id(org_row_id)
     all_data = dict(load_smtp_settings_store())
     prev = all_data.get(tid, {}) if isinstance(all_data.get(tid), dict) else {}
 
@@ -149,14 +149,14 @@ def put_smtp_config(tenant_id: TenantId, body: SmtpConfigIn):
     save_smtp_settings_store(all_data)
     return {
         "ok": True,
-        "message": "SMTP settings saved for this tenant on the API server.",
+        "message": "SMTP settings saved on the API server for this workspace.",
     }
 
 
 @router.delete("/email_notifications/config")
-def delete_smtp_config(tenant_id: TenantId):
-    """Remove stored tenant override; the API will fall back to environment variables if set."""
-    tid = _safe_tenant(tenant_id)
+def delete_smtp_config(org_row_id: WorkspaceScopeId):
+    """Remove stored app SMTP settings; environment variables apply when set."""
+    tid = _sanitize_org_row_id(org_row_id)
     all_data = dict(load_smtp_settings_store())
     if tid in all_data:
         del all_data[tid]
@@ -171,8 +171,8 @@ class TestEmailBody(BaseModel):
 
 
 @router.post("/email_notifications/test")
-def send_test_email(tenant_id: TenantId, body: TestEmailBody):
-    if not _is_configured_for_tenant(tenant_id):
+def send_test_email(org_row_id: WorkspaceScopeId, body: TestEmailBody):
+    if not _smtp_ready(org_row_id):
         raise HTTPException(
             status_code=503,
             detail="SMTP is not configured. Use the form to save your outbound mail settings, "
@@ -185,7 +185,7 @@ def send_test_email(tenant_id: TenantId, body: TestEmailBody):
     subj = (body.subject or "Piecemint — test email").strip()
 
     try:
-        send_plain_email(tenant_id, [str(body.to)], subj, text)
+        send_plain_email(org_row_id, [str(body.to)], subj, text)
     except SmtpSendError as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
 

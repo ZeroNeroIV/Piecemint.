@@ -1,10 +1,12 @@
 """
 Comprehensive mock rows for local/demo DB seeding. Matches db_models (every column).
 
+FK column on child rows is still `tenant_id` in the schema (references org/workspace row).
+
 * Client / Supplier: id, tenant_id, name, email, total_billed
 * Transaction: id, tenant_id, amount, date, type, category, is_recurring, last_activity
 * Stockholder: id, tenant_id, name, email, share_percent, notes
-* Tenant: id, name
+* Tenant ((org row)): id, name — single workspace in default seed
 """
 
 from __future__ import annotations
@@ -13,8 +15,8 @@ from api import db_models
 
 TID = "default"
 
-# —— One built-in org (no multi-tenant UI) ——
-TENANTS: list[db_models.Tenant] = [
+# —— Single workspace org row (self-hosted default seed) ——
+SEED_ORGANIZATIONS: list[db_models.Tenant] = [
     db_models.Tenant(
         id=TID,
         name="Acme & Co. (Denver) — combined demo",
@@ -228,7 +230,7 @@ STOCKHOLDERS: list[db_models.Stockholder] = [
 
 def all_seed_rows() -> list:
     return [
-        *TENANTS,
+        *SEED_ORGANIZATIONS,
         *CLIENTS,
         *SUPPLIERS,
         *TRANSACTIONS,

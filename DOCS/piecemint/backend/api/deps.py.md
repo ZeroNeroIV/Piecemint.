@@ -1,11 +1,11 @@
-# FastAPI dependencies: DB session and tenant header
+# FastAPI dependencies: DB session and workspace scope
 
 **Source file:** `piecemint/backend/api/deps.py`
 
 ## Overview
 
-- **`get_tenant_id`**: reads **`X-Tenant-ID`**; returns 400 if missing or blank.
+- **`get_workspace_scope_id`**: returns the primary org FK (`PRIMARY_WORKSPACE_ROW_ID`) for this deployment.
 
-- **`TenantId`**: `Annotated[str, Depends(get_tenant_id)]` for concise route parameters.
+- **`WorkspaceScopeId`**: `Annotated[str, Depends(get_workspace_scope_id)]` for concise route parameters.
 
 - **`DbSession`**: `Annotated[Session, Depends(get_db)]` for SQLAlchemy sessions per request.

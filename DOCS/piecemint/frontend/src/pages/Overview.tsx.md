@@ -6,4 +6,4 @@
 
 - Landing KPIs and charts using **`useFinanceData`**; links into analytics and activity.
 
-- Sends **`X-Tenant-ID`** on API calls via shared axios/config patterns in context.
+- Loads finance data via shared API client / context (implicit single workspace).

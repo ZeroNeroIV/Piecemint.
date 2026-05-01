@@ -1,4 +1,4 @@
-# Core REST API (tenant-scoped)
+# Core REST API (single workspace)
 
 **Source file:** `piecemint/backend/api/core_routes.py`
 
@@ -6,9 +6,9 @@
 
 - Router prefix: `/api/core`.
 
-- Uses **`DbSession`** and **`TenantId`** dependencies: data is filtered by `X-Tenant-ID` for every tenant-bound row.
+- Uses **`DbSession`** and **`WorkspaceScopeId`**: all rows are scoped to the primary org FK (self-hosted; no header pickers).
 
-- `GET /tenants` lists all tenants (no tenant header required) for discovery/admin.
+- `GET /workspace` returns the org row id and display name.
 
 - Exposes CRUD-style routes for **clients**, **suppliers**, **transactions**, and **stockholders** against SQLAlchemy models.
 

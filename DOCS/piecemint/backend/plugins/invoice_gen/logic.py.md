@@ -4,6 +4,6 @@
 
 ## Overview
 
-- **`GET /invoice_gen/generate/{client_id}`** loads a **`Client`** for the current tenant, returns **`application/pdf`** (ReportLab canvas).
+- **`GET /invoice_gen/generate/{client_id}`** loads a **`Client`** for the scoped workspace, returns **`application/pdf`** (ReportLab canvas).
 
-- 404 if the client id does not exist for that tenant.
+- 404 if the client id does not exist in this workspace.

@@ -63,6 +63,8 @@ class StockholderCreate(BaseModel):
     notes: str = ""
 
 
-class TenantInfo(BaseModel):
+class WorkspaceSummary(BaseModel):
+    """Primary org row for this deployment (SQLite/Postgres `tenants.id`)."""
+
     id: str
     name: str

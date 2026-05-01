@@ -16,17 +16,17 @@ from pathlib import Path
 _DATA_DIR = Path(__file__).resolve().parent.parent / "plugins" / "email_notifications" / "data"
 _DATA_FILE = _DATA_DIR / "smtp_settings.json"
 
-_TENANT_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+_ORG_FK_KEY_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 
 
 class SmtpSendError(Exception):
     """Non-HTTP exception for MCP and internal callers."""
 
 
-def _safe_tenant(tenant_id: str) -> str:
-    t = str(tenant_id).strip()
-    if not _TENANT_RE.match(t):
-        raise ValueError("Invalid tenant id.")
+def _sanitize_org_row_id(org_row_id: str) -> str:
+    t = str(org_row_id).strip()
+    if not _ORG_FK_KEY_RE.match(t):
+        raise ValueError("Invalid org workspace key.")
     return t
 
 
@@ -65,17 +65,17 @@ def env_smtp() -> dict:
     }
 
 
-def _tenant_row(tenant_id: str) -> dict | None:
-    tid = _safe_tenant(tenant_id)
+def _smtp_saved_row(org_row_id: str) -> dict | None:
+    tid = _sanitize_org_row_id(org_row_id)
     row = _load_all().get(tid)
     if not row or not isinstance(row, dict):
         return None
     return row
 
 
-def effective_smtp(tenant_id: str) -> tuple[str, int, str, str | None, str, bool]:
+def effective_smtp(org_row_id: str) -> tuple[str, int, str, str | None, str, bool]:
     env = env_smtp()
-    t = _tenant_row(tenant_id)
+    t = _smtp_saved_row(org_row_id)
     if t and (t.get("host") or "").strip():
         port = t.get("port", 587)
         try:
@@ -104,17 +104,17 @@ def effective_smtp(tenant_id: str) -> tuple[str, int, str, str | None, str, bool
     )
 
 
-def smtp_is_configured(tenant_id: str) -> bool:
-    host, _p, user, pw, from_addr, _t = effective_smtp(tenant_id)
+def smtp_is_configured(org_row_id: str) -> bool:
+    host, _p, user, pw, from_addr, _t = effective_smtp(org_row_id)
     return bool(host and user and pw and from_addr)
 
 
-def _send_message(msg: EmailMessage, tenant_id: str) -> None:
-    if not smtp_is_configured(tenant_id):
+def _send_message(msg: EmailMessage, org_row_id: str) -> None:
+    if not smtp_is_configured(org_row_id):
         raise SmtpSendError(
             "SMTP is not configured. Save settings in Email notifications or set FF_SMTP_* on the server."
         )
-    host, port, user, password, from_addr, use_tls = effective_smtp(tenant_id)
+    host, port, user, password, from_addr, use_tls = effective_smtp(org_row_id)
     if not password:
         raise SmtpSendError("No SMTP password configured.")
     if "From" not in msg:
@@ -131,16 +131,16 @@ def _send_message(msg: EmailMessage, tenant_id: str) -> None:
         raise SmtpSendError(f"SMTP error: {e}") from e
 
 
-def send_plain_email(tenant_id: str, to_addresses: list[str], subject: str, text_body: str) -> None:
+def send_plain_email(org_row_id: str, to_addresses: list[str], subject: str, text_body: str) -> None:
     msg = EmailMessage()
     msg["Subject"] = subject.strip() or "(no subject)"
     msg["To"] = ", ".join(to_addresses)
     msg.set_content(text_body)
-    _send_message(msg, tenant_id)
+    _send_message(msg, org_row_id)
 
 
 def send_email_with_attachments(
-    tenant_id: str,
+    org_row_id: str,
     to_addresses: list[str],
     subject: str,
     text_body: str,
@@ -161,7 +161,7 @@ def send_email_with_attachments(
         mt = maintype or "application"
         msg.add_attachment(content, maintype=mt, subtype=st, filename=filename)
 
-    _send_message(msg, tenant_id)
+    _send_message(msg, org_row_id)
 
 
 # ---- persistence API used by email_notifications plugin ----
