@@ -1,0 +1,21 @@
+# Render Blueprint: Piecemint (FastAPI + static SPA in one Docker image).
+#
+# After merge: Dashboard → New → Blueprint → connect this repo; Render reads render.yaml.
+# SQLite under /data is ephemeral on the free tier (resets on redeploy). For persistence,
+# upgrade the service plan and add a disk mounted at /data from the Dashboard.
+
+services:
+  - type: web
+    name: piecemint
+    runtime: docker
+    plan: free
+    branch: main
+    region: oregon
+    dockerfilePath: ./piecemint/backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /
+    envVars:
+      - key: PIECEMINT_DATABASE_URL
+        value: sqlite:////data/piecemint.db
+      - key: PIECEMINT_STATIC_DIR
+        value: /app/static

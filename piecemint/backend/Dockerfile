@@ -27,6 +27,10 @@ COPY --from=frontend-build /frontend/dist ./static
 
 ENV PIECEMINT_STATIC_DIR=/app/static
 
-EXPOSE 8000
+# SQLite path in docker-compose / Render (ephemeral on free tier without a disk).
+RUN mkdir -p /data
 
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8000
+ENV PORT=8000
+
+CMD ["sh", "-c", "exec uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
