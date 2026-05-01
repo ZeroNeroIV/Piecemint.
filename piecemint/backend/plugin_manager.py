@@ -1,9 +1,14 @@
-import os
-import yaml
 import importlib.util
+import logging
+import os
 from pathlib import Path
+from typing import Any
+
+import yaml
 
 from plugin_icon import plugin_dict_with_icon, resolve_plugin_icon_path
+
+log = logging.getLogger(__name__)
 
 
 class PluginManager:
@@ -51,6 +56,64 @@ class PluginManager:
     def register_routes(self, app):
         for router in self.routers:
             app.include_router(router, prefix="/api/plugins")
+
+    def apply_mcp_extras(self, mcp: Any) -> list[str]:
+        """
+        Load optional plugins/*/mcp_extras.py for enabled plugins (same discovery rules as REST:
+        directory under plugins/ with manifest.yaml).
+
+        Each mcp_extras module may define::
+
+            def register_mcp(mcp) -> None:
+                ...  # e.g. @mcp.tool on functions or mcp.add_tool(...)
+
+        Returns plugin IDs whose extras loaded successfully.
+        """
+        loaded: list[str] = []
+        if not os.path.exists(self.plugins_dir):
+            return loaded
+
+        for plugin_name in sorted(os.listdir(self.plugins_dir)):
+            plugin_path = os.path.join(self.plugins_dir, plugin_name)
+            if not os.path.isdir(plugin_path):
+                continue
+            manifest = self._read_manifest(plugin_path)
+            if not manifest:
+                continue
+
+            extras_path = os.path.join(plugin_path, "mcp_extras.py")
+            if not os.path.isfile(extras_path):
+                continue
+
+            mod_name = f"plugins.{plugin_name}.mcp_extras"
+            try:
+                spec = importlib.util.spec_from_file_location(mod_name, extras_path)
+                if spec is None or spec.loader is None:
+                    log.warning("Could not load spec for %s", extras_path)
+                    continue
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+            except Exception:
+                log.exception("Failed to import mcp_extras for plugin %r", plugin_name)
+                continue
+
+            registrar = getattr(module, "register_mcp", None)
+            if not callable(registrar):
+                log.warning(
+                    "Plugin %r has mcp_extras.py but no callable register_mcp(mcp)",
+                    plugin_name,
+                )
+                continue
+
+            try:
+                registrar(mcp)
+            except Exception:
+                log.exception("register_mcp failed for plugin %r", plugin_name)
+                continue
+
+            loaded.append(plugin_name)
+
+        return loaded
 
     def get_installed_plugins(self):
         installed = []
