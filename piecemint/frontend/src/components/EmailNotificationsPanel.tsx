@@ -151,19 +151,33 @@ export default function EmailNotificationsPanel() {
     try {
       const { data } = await axios.post<{ message?: string }>(
         `${API_BASE}/plugins/email_notifications/test`,
-        { to: email }
+        { to: email },
+        { timeout: 90_000 }
       );
       setOk(data?.message || 'Test email sent.');
     } catch (e) {
-      if (axios.isAxiosError(e) && e.response?.data) {
-        const d = e.response.data as { detail?: string | { msg: string }[] };
-        if (typeof d.detail === 'string') {
+      if (axios.isAxiosError(e)) {
+        const d = e.response?.data as { detail?: string | { msg: string }[] } | undefined;
+        if (typeof d?.detail === 'string') {
           setError(d.detail);
+        } else if (Array.isArray(d?.detail) && d.detail.length > 0) {
+          const first = d.detail[0];
+          setError(typeof first?.msg === 'string' ? first.msg : 'Invalid request.');
+        } else if (e.response?.status) {
+          setError(
+            `Request failed (HTTP ${e.response.status}). Sending can take up to ~30s while the API talks to your SMTP server — if you use a reverse proxy, raise its read timeout.`
+          );
+        } else if (e.code === 'ECONNABORTED') {
+          setError('Request timed out. Your SMTP host may be unreachable or a proxy closed the connection.');
         } else {
-          setError('Request failed.');
+          setError(
+            e.message
+              ? `${e.message} (no response from API — confirm it is running and ${API_BASE} is correct in VITE_API_URL)`
+              : 'No response from API. Confirm the backend is running and the URL in VITE_API_URL matches it.'
+          );
         }
       } else {
-        setError('Request failed. Is the API running?');
+        setError('Unexpected error while sending test.');
       }
     } finally {
       setBusy(false);

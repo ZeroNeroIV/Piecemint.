@@ -120,14 +120,22 @@ def _send_message(msg: EmailMessage, org_row_id: str) -> None:
     if "From" not in msg:
         msg["From"] = from_addr
     try:
-        with smtplib.SMTP(host, port, timeout=30) as smtp:
-            if use_tls:
-                smtp.starttls()
-            smtp.login(user, password)
-            smtp.send_message(msg)
+        # Port 465 is typically implicit TLS (SMTP_SSL), not STARTTLS on plain SMTP().
+        if use_tls and port == 465:
+            with smtplib.SMTP_SSL(host, port, timeout=30) as smtp:
+                smtp.login(user, password)
+                smtp.send_message(msg)
+        else:
+            with smtplib.SMTP(host, port, timeout=30) as smtp:
+                if use_tls:
+                    smtp.starttls()
+                smtp.login(user, password)
+                smtp.send_message(msg)
     except OSError as e:
         raise SmtpSendError(f"SMTP connection failed: {e}") from e
     except smtplib.SMTPException as e:
+        raise SmtpSendError(f"SMTP error: {e}") from e
+    except Exception as e:
         raise SmtpSendError(f"SMTP error: {e}") from e
 
 

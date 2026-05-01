@@ -3,14 +3,14 @@ SMTP: save settings via PUT /email_notifications/config (plugins/.../data/)
 or use FF_SMTP_* on the API host (fallback for password when not re-saved).
 """
 
-from __future__ import annotations
-
+import logging
 import re
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from api.deps import WorkspaceScopeId
+from api.models import EmailNotificationTestBody
 from api.smtp_outbound import (
     effective_smtp,
     env_smtp,
@@ -22,6 +22,8 @@ from api.smtp_outbound import (
 from api.smtp_outbound import SmtpSendError
 
 router = APIRouter()
+
+log = logging.getLogger(__name__)
 
 _ORG_FK_KEY_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 
@@ -118,14 +120,14 @@ def get_smtp_config(org_row_id: WorkspaceScopeId):
 
 
 @router.put("/email_notifications/config")
-def put_smtp_config(org_row_id: WorkspaceScopeId, body: SmtpConfigIn):
+def put_smtp_config(org_row_id: WorkspaceScopeId, payload: SmtpConfigIn):
     tid = _sanitize_org_row_id(org_row_id)
     all_data = dict(load_smtp_settings_store())
     prev = all_data.get(tid, {}) if isinstance(all_data.get(tid), dict) else {}
 
     new_pw: str | None
-    if body.password is not None:
-        new_pw = body.password
+    if payload.password is not None:
+        new_pw = payload.password
     else:
         new_pw = (prev.get("password") or "").strip() or None
         if not new_pw:
@@ -137,11 +139,11 @@ def put_smtp_config(org_row_id: WorkspaceScopeId, body: SmtpConfigIn):
         )
 
     row = {
-        "host": body.host.strip(),
-        "port": body.port,
-        "user": body.user.strip(),
-        "from_address": body.from_address.strip(),
-        "use_tls": body.use_tls,
+        "host": payload.host.strip(),
+        "port": payload.port,
+        "user": payload.user.strip(),
+        "from_address": payload.from_address.strip(),
+        "use_tls": payload.use_tls,
         "password": new_pw,
     }
 
@@ -164,14 +166,8 @@ def delete_smtp_config(org_row_id: WorkspaceScopeId):
     return {"ok": True, "message": "Saved SMTP settings cleared. Environment defaults apply if set."}
 
 
-class TestEmailBody(BaseModel):
-    to: EmailStr
-    subject: str | None = "Piecemint — test email"
-    text: str | None = None
-
-
 @router.post("/email_notifications/test")
-def send_test_email(org_row_id: WorkspaceScopeId, body: TestEmailBody):
+def send_test_email(org_row_id: WorkspaceScopeId, payload: EmailNotificationTestBody):
     if not _smtp_ready(org_row_id):
         raise HTTPException(
             status_code=503,
@@ -179,14 +175,24 @@ def send_test_email(org_row_id: WorkspaceScopeId, body: TestEmailBody):
             "or set FF_SMTP_* in the API environment.",
         )
 
-    text = (body.text or "").strip() or (
+    text = (payload.text or "").strip() or (
         "This is a test from Piecemint. If you received this, SMTP is set up."
     )
-    subj = (body.subject or "Piecemint — test email").strip()
+    subj = (payload.subject or "Piecemint - test email").strip()
 
     try:
-        send_plain_email(org_row_id, [str(body.to)], subj, text)
+        send_plain_email(org_row_id, [str(payload.to)], subj, text)
     except SmtpSendError as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
+    except Exception as e:
+        log.exception("email_notifications test send failed")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Unexpected error while sending mail: {e}",
+        ) from e
 
-    return {"ok": True, "to": body.to, "message": "Message accepted by the mail server."}
+    return {
+        "ok": True,
+        "to": str(payload.to),
+        "message": "Message accepted by the mail server.",
+    }

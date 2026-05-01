@@ -1,4 +1,12 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
+
+
+class EmailNotificationTestBody(BaseModel):
+    """Request body for POST /api/plugins/email_notifications/test (typed in api.models for Pydantic with dynamic plugins)."""
+
+    to: EmailStr
+    subject: str | None = "Piecemint - test email"
+    text: str | None = None
 
 
 class Client(BaseModel):
