@@ -228,6 +228,28 @@ h3 {
   height: 0;
 }
 
+/* Smart categorize toolbar — indeterminate striped bar (tokens: signal orange / ink track) */
+@keyframes smart-categorize-indeterminate-shift {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(340%);
+  }
+}
+
+.smart-categorize-progress-stripes {
+  width: 40%;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--signal-orange) 0 8px,
+    var(--light-signal-orange) 8px 16px
+  );
+  animation: smart-categorize-indeterminate-shift 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ff-sidebar-panel-open,
   .ff-sidebar-item-open,
@@ -247,5 +269,12 @@ h3 {
     display: block;
     width: 8px;
     height: 8px;
+  }
+
+  .smart-categorize-progress-stripes {
+    animation: none;
+    transform: none;
+    width: 100%;
+    opacity: 0.9;
   }
 }

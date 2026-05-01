@@ -28,19 +28,30 @@ export default function SmartCategorizeToolbar() {
           request.
         </p>
       </div>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full max-w-2xl">
         <button
           type="button"
           disabled={smartCategorizeBusy}
+          aria-busy={smartCategorizeBusy}
           onClick={() => void runSmartCategorize()}
-          className="inline-flex items-center justify-center gap-2 rounded-full border border-ink-black bg-ink-black text-canvas-cream px-4 py-2 text-sm font-medium hover:bg-ink-black/90 disabled:opacity-50 disabled:pointer-events-none w-fit"
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-ink-black bg-ink-black text-canvas-cream px-4 py-2 text-sm font-medium hover:bg-ink-black/90 disabled:opacity-50 disabled:pointer-events-none w-fit shrink-0"
         >
-          <Sparkles size={16} />
-          {smartCategorizeBusy ? 'Categorizing…' : 'Smart categorization'}
+          <Sparkles size={16} aria-hidden />
+          {smartCategorizeBusy ? 'Running…' : 'Smart categorization'}
         </button>
+        {smartCategorizeBusy && (
+          <div
+            className="relative h-2.5 flex-1 min-w-[140px] rounded-full bg-ink-black/10 overflow-hidden"
+            role="progressbar"
+            aria-valuetext="Categorizing transactions"
+            aria-live="polite"
+          >
+            <div className="smart-categorize-progress-stripes absolute inset-y-0 left-0 rounded-full" aria-hidden />
+          </div>
+        )}
         {smartCategorizeSuccess && !smartCategorizeBusy && (
           <p
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-800"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-800 sm:flex-1"
             role="status"
             aria-live="polite"
           >
