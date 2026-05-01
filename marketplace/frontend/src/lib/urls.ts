@@ -21,8 +21,24 @@ function isLoopbackHostname(hostname: string): boolean {
  * the proxy and often fail (IPv6 localhost vs IPv4 uvicorn bind).
  *
  * In **production**, an explicit `VITE_MARKETPLACE_API_URL` is honored (HTTPS remote APIs, etc.).
+ *
+ * If the env base is **`/api`** (or **`…/api`**) while call sites pass paths from the site root
+ * (**`/api/plugins`**, …), concatenation would wrongly yield **`/api/api/...`**; that case is folded
+ * back to **`/api/...`** (or **`origin…/api/...`**).
  */
 const apiRaw = import.meta.env.VITE_MARKETPLACE_API_URL;
+
+function joinMarketplaceApiBase(normalizedBase: string, absoluteFromRoot: string): string {
+  const base = normalizedBase.replace(/\/$/, '');
+  if (
+    absoluteFromRoot.startsWith('/api/') &&
+    (base === '/api' || base.endsWith('/api'))
+  ) {
+    const originPrefix = base === '/api' ? '' : base.slice(0, -'/api'.length);
+    return `${originPrefix}${absoluteFromRoot}`;
+  }
+  return `${base}${absoluteFromRoot}`;
+}
 
 function marketplaceApiUsesDevProxy(): boolean {
   if (!import.meta.env.DEV) return false;
@@ -44,7 +60,7 @@ export function marketplaceApiPath(path: string): string {
   }
   const api = typeof apiRaw === 'string' ? apiRaw.trim() : '';
   if (api.length > 0) {
-    return `${api.replace(/\/$/, '')}${p}`;
+    return joinMarketplaceApiBase(api, p);
   }
   return p;
 }
