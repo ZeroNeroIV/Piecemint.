@@ -118,7 +118,29 @@ PLUGINS: List[Plugin] = discover_piecemint_plugins()
 @app.get("/api/health")
 def health():
     """Liveness probe (Render, docker compose, debugging)."""
-    return {"status": "ok", "catalog_plugins": len(PLUGINS)}
+    spa_raw = os.environ.get("MARKETPLACE_STATIC_DIR", "").strip()
+    spa_ok = bool(spa_raw) and os.path.isdir(spa_raw)
+    pm_ok = PIECEMINT_BACKEND.is_dir()
+    plugins_ok = (PIECEMINT_BACKEND / "plugins").is_dir()
+    # Render only needs 2xx — keep `ok: true` whenever the process is up.
+    warnings: list[str] = []
+    if not pm_ok:
+        warnings.append("piecemint backend path missing — clone full monorepo for catalog")
+    elif not plugins_ok:
+        warnings.append("piecemint backend/plugins missing — image build may be incomplete")
+    elif not spa_ok and spa_raw:
+        warnings.append("MARKETPLACE_STATIC_DIR set but directory missing")
+    return {
+        "ok": True,
+        "status": "ok" if not warnings else "degraded",
+        "catalog_plugins": len(PLUGINS),
+        "repo_root_piecemint_expected": str(PIECEMINT_BACKEND),
+        "piecemint_backend_exists": pm_ok,
+        "piecemint_plugins_dir_exists": plugins_ok,
+        "spa_mount_configured": bool(spa_raw),
+        "spa_static_dir_present": spa_ok,
+        "warnings": warnings,
+    }
 
 
 @app.get("/api/plugins/{plugin_id}/download")
@@ -197,7 +219,38 @@ def _spa_static_dir() -> str | None:
 
 SPA_STATIC_DIR = _spa_static_dir()
 
+# Production: serve the Vite build without `app.mount("/", StaticFiles)`.
+# A root StaticFiles Mount can interfere with `/api/*` routing on some ASGI stacks
+# behind reverse proxies — register explicit SPA routes AFTER all API routes above.
 if SPA_STATIC_DIR is not None:
-    from fastapi.staticfiles import StaticFiles
+    _SPA_ROOT = Path(SPA_STATIC_DIR).resolve()
+    _SPA_INDEX = _SPA_ROOT / "index.html"
 
-    app.mount("/", StaticFiles(directory=SPA_STATIC_DIR, html=True), name="spa")
+    def _spa_file_for_url_path(url_path: str) -> Path | None:
+        rel = url_path.strip().strip("/").replace("\\", "/")
+        if not rel:
+            return None
+        parts = rel.split("/")
+        if ".." in parts:
+            return None
+        cand = (_SPA_ROOT / rel).resolve()
+        try:
+            cand.relative_to(_SPA_ROOT)
+        except ValueError:
+            return None
+        return cand if cand.is_file() else None
+
+    if _SPA_INDEX.is_file():
+
+        @app.get("/")
+        def _spa_index():
+            return FileResponse(_SPA_INDEX)
+
+        @app.get("/{full_path:path}")
+        def _spa_or_asset(full_path: str):
+            if full_path == "api" or full_path.startswith("api/"):
+                raise HTTPException(status_code=404, detail="Not Found")
+            hit = _spa_file_for_url_path(full_path)
+            if hit is not None:
+                return FileResponse(hit)
+            return FileResponse(_SPA_INDEX)

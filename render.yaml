@@ -8,6 +8,9 @@
 # then redeploy so Vite embeds the correct links.
 #
 # Piecemint SQLite under /data is ephemeral on the free tier unless you add a paid disk at /data.
+#
+# Marketplace API + SPA share one origin; `/api/*` must stay routable — use the latest marketplace
+# backend (explicit SPA file routes, not a root StaticFiles mount).
 
 services:
   # Plugin catalog + downloads (reads piecemint/backend/plugins* from the image).

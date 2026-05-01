@@ -19,4 +19,4 @@ There is no mirrored doc tree under **`DOCS/`** for the marketplace app. The pub
 
 ## Root scripts
 
-From the repo root, **`package.json`** defines **`npm run dev`** (concurrent Piecemint + marketplace dev servers). Piecemint backend dependencies are managed with **Pipenv** in **`piecemint/backend`**.
+From the repo root, **`package.json`** defines **`npm run dev`** (concurrent Piecemint + marketplace dev servers). Piecemint backend dependencies are managed with **Pipenv** in **`piecemint/backend`**; the marketplace API uses **`marketplace/backend/requirements.txt`** (run **`npm run marketplace-be-install-packages`** once, then **`npm run marketplace-be`**).

@@ -92,7 +92,7 @@ function App() {
       })
       .catch(() => {
         setCatalogError(
-          'Could not load catalog. Run `npm run marketplace-be` (API on http://127.0.0.1:8001).',
+          'Could not load catalog. From repo root run `npm run marketplace-be-install-packages` then `npm run marketplace-be` (API http://127.0.0.1:8001).',
         )
         console.error('Error fetching plugins: marketplace API unreachable')
       })
