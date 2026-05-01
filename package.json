@@ -24,7 +24,7 @@
     "build": "npm run piecemint-fe:build && npm run marketplace-fe:build",
     "lint": "npm run piecemint-fe:lint && npm run marketplace-fe:lint",
     "install:all": "npm run marketplace-install-all && npm run piecemint-install-all",
-    "dev": "concurrently -n \"MARKET-FE,MARKET-BE,PIECE-FE,PIECE-BE\" -c \"cyan,blue,yellow,magenta\" \"npm run marketplace-fe\" \"npm run marketplace-be\" \"npm run piecemint-fe\" \"npm run piecemint-be\""
+    "dev": "concurrently -n \"MARKET-FE,MARKET-BE,PIECE-FE,PIECE-BE\" -c \"cyan,blue,yellow,magenta\" \"wait-on -t 90000 tcp:8001 && npm run marketplace-fe\" \"npm run marketplace-be\" \"wait-on -t 90000 tcp:8000 && npm run piecemint-fe\" \"npm run piecemint-be\""
   },
   "repository": {
     "type": "git",
@@ -37,6 +37,7 @@
   },
   "homepage": "https://github.com/ZeroNeroIV/salamhack-prototype2#readme",
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "wait-on": "^8.0.5"
   }
 }
