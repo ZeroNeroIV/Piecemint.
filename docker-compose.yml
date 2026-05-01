@@ -1,13 +1,12 @@
-# Piecemint: single image (FastAPI + built SPA).
+# Piecemint + marketplace (each: FastAPI + built SPA).
 # Usage from repo root:
 #   docker compose up --build
-#   open http://localhost:8080  or  http://localhost:8000
+#   Piecemint: http://localhost:8080
+#   Marketplace: http://localhost:9081
 #
-# If Docker fails with overlayfs/containerd snapshot errors, build and run with Podman:
-#   podman build -f piecemint/backend/Dockerfile -t prototype2-api --build-arg VITE_API_URL=/api --build-arg VITE_MARKETPLACE_URL=http://localhost:5174 .
-#   podman run --rm -p 8080:8000 -e PIECEMINT_DATABASE_URL=sqlite:////data/piecemint.db -e PIECEMINT_STATIC_DIR=/app/static -v piecemint-sqlite:/data localhost/prototype2-api
+# SQLite for Piecemint is in volume piecemint-sqlite at /data/piecemint.db.
 #
-# SQLite is stored in the `piecemint-sqlite` volume at /data/piecemint.db.
+# If Docker overlayfs/containerd errors occur locally, build with Podman (see earlier comments).
 
 services:
   api:
@@ -16,7 +15,7 @@ services:
       dockerfile: piecemint/backend/Dockerfile
       args:
         VITE_API_URL: /api
-        VITE_MARKETPLACE_URL: http://localhost:5174
+        VITE_MARKETPLACE_URL: http://localhost:9081
     ports:
       - "8080:8000"
       - "8000:8000"
@@ -37,6 +36,18 @@ services:
       timeout: 5s
       retries: 6
       start_period: 45s
+
+  marketplace:
+    build:
+      context: .
+      dockerfile: marketplace/backend/Dockerfile
+      args:
+        VITE_MAIN_APP_URL: http://localhost:8080
+        VITE_MARKETPLACE_API_URL: /api
+    ports:
+      - "9081:8000"
+    environment:
+      MARKETPLACE_STATIC_DIR: /app/marketplace/backend/static
 
 volumes:
   piecemint-sqlite:

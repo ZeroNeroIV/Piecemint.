@@ -1,10 +1,39 @@
-# Render Blueprint: Piecemint (FastAPI + static SPA in one Docker image).
+# Render Blueprint: Piecemint app + plugin marketplace (each: FastAPI + static SPA in Docker).
 #
-# After merge: Dashboard → New → Blueprint → connect this repo; Render reads render.yaml.
-# SQLite under /data is ephemeral on the free tier (resets on redeploy). For persistence,
-# upgrade the service plan and add a disk mounted at /data from the Dashboard.
+# Default public URLs (after deploy, confirm in the Render Dashboard):
+#   https://piecemint.onrender.com
+#   https://piecemint-marketplace.onrender.com
+#
+# If Render assigns different onrender.com names, update env vars on BOTH services to match,
+# then redeploy so Vite embeds the correct links.
+#
+# Piecemint SQLite under /data is ephemeral on the free tier unless you add a paid disk at /data.
 
 services:
+  # Plugin catalog + downloads (reads piecemint/backend/plugins* from the image).
+  - type: web
+    name: piecemint-marketplace
+    runtime: docker
+    plan: free
+    branch: main
+    region: oregon
+    dockerfilePath: ./marketplace/backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /
+    buildFilter:
+      paths:
+        - marketplace/**
+        - piecemint/backend/plugins/**
+        - piecemint/backend/disabled_plugins/**
+    envVars:
+      - key: MARKETPLACE_STATIC_DIR
+        value: /app/marketplace/backend/static
+      # Passed into the Docker build as ARG (see Render Docker docs).
+      - key: VITE_MAIN_APP_URL
+        value: https://piecemint.onrender.com
+      - key: VITE_MARKETPLACE_API_URL
+        value: /api
+
   - type: web
     name: piecemint
     runtime: docker
@@ -14,8 +43,16 @@ services:
     dockerfilePath: ./piecemint/backend/Dockerfile
     dockerContext: .
     healthCheckPath: /
+    buildFilter:
+      paths:
+        - piecemint/**
     envVars:
       - key: PIECEMINT_DATABASE_URL
         value: sqlite:////data/piecemint.db
       - key: PIECEMINT_STATIC_DIR
         value: /app/static
+      - key: VITE_MARKETPLACE_URL
+        value: https://piecemint-marketplace.onrender.com
+      # Optional; defaults in Dockerfile — same-origin API in prod build.
+      - key: VITE_API_URL
+        value: /api

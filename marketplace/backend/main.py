@@ -1,5 +1,6 @@
 import io
 import mimetypes
+import os
 import zipfile
 from pathlib import Path
 from typing import Any, List
@@ -177,3 +178,18 @@ def plugin_icon(plugin_id: str):
 @app.get("/api/plugins", response_model=List[Plugin])
 def get_plugins():
     return PLUGINS
+
+
+def _spa_static_dir() -> str | None:
+    raw = os.environ.get("MARKETPLACE_STATIC_DIR", "").strip()
+    if not raw or not os.path.isdir(raw):
+        return None
+    return raw
+
+
+SPA_STATIC_DIR = _spa_static_dir()
+
+if SPA_STATIC_DIR is not None:
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/", StaticFiles(directory=SPA_STATIC_DIR, html=True), name="spa")

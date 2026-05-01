@@ -80,7 +80,7 @@ jobs:
       - name: Install dependencies (marketplace)
         if: matrix.product == 'marketplace'
         working-directory: ${{ matrix.workdir }}
-        run: pip install "fastapi>=0.115" "uvicorn[standard]>=0.32" "pydantic>=2"
+        run: pip install -r requirements.txt
 
       - name: Smoke import (marketplace)
         if: matrix.product == 'marketplace'
