@@ -2,9 +2,7 @@
 
 > Your all-in-one finance tool — dashboards, analytics, invoicing, budgeting, contacts, and a plugin ecosystem.
 
-Built for **Salam Hack** by [**Alameen Sabbah (ZeroNeroIV)**](https://github.com/ZeroNeroIV).  
-Design language inspired by **Mastercard** — warm cream canvas, signal orange accents, pill-shaped components, editorial typography.
-
+Built for **Salam Hack**   
 ---
 
 ## ✨ Features
@@ -45,15 +43,6 @@ Piecemint has a built-in plugin architecture. Each plugin is a directory with a 
 ---
 
 ## 🚀 Quick Start
-
-### Prerequisites
-
-| Tool        | Version   |
-|-------------|-----------|
-| Node.js     | 22+       |
-| Python      | 3.12–3.14 |
-| pipenv      | latest    |
-| Docker      | optional  |
 
 ### 1. Install Dependencies
 
@@ -152,7 +141,3 @@ npm run marketplace-be                  # uvicorn (port 8001)
 Piecemint ships with a Model Context Protocol server (`piecemint/backend/mcp_server.py`) for AI/LLM integration. It exposes tools for reading/writing financial data, sending emails, and generating invoices. Compatible with Cursor, Claude, and any MCP-compatible assistant.
 
 ---
-
-## 📄 License
-
-[MIT](LICENSE) © Alameen Sabbah
